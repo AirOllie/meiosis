@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Human meiosis</title>
-    <link rel="stylesheet" href="./style.css" />
+    <link rel="stylesheet" href="./style.css?v=cohesion" />
     <script type="importmap">
       {
         "imports": {
@@ -50,6 +50,7 @@
           <div class="board-legend">
             <span><i class="legend-dot origin-a"></i>A / B: homologs</span
             ><span><i class="membrane-swatch"></i>Cell membrane</span>
+            <span><i class="cohesion-swatch"></i>Cohesin</span>
             <span><b>01</b> Segment</span><span><b>′</b> Sister copy</span>
             <span id="sexPairLegend"></span>
           </div>
@@ -123,6 +124,11 @@
         mode shows chromosome segregation, not unequal oocyte division or polar
         bodies. Shapes, lengths, and positions are schematic.
       </p>
+      <p>
+        Gold links show sister cohesion. Arm links are released at anaphase I;
+        cohesion near the centromere remains until sisters separate in meiosis
+        II. These links represent cohesin, not DNA joining the two homologs.
+      </p>
       <p>Changing XX / XY starts a new run.</p>
       <div class="help-sources">
         <a
@@ -138,6 +144,6 @@
         >
       </div>
     </dialog>
-    <script type="module" src="./app.js"></script>
+    <script type="module" src="./app.js?v=cohesion"></script>
   </body>
 </html>

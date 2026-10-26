@@ -118,6 +118,8 @@ export class CellView {
     const group = svg("g", { "data-chromosome-id": id });
     const title = svg("title", {}, shortChromatid(id));
     group.appendChild(title);
+    const cohesion = svg("g", { class: "sister-cohesion" });
+    group.appendChild(cohesion);
     const label = svg(
       "text",
       { "text-anchor": "middle", class: "live-chromosome-label" },
@@ -137,6 +139,8 @@ export class CellView {
       lines: [],
       segments: new Map(),
       copies: [],
+      cohesion,
+      cohesionLinks: [],
     };
     this.nodes.set(id, unit);
     return unit;
@@ -206,6 +210,7 @@ export class CellView {
       line.style.display = "none";
     });
     this.drawSegments(node, unit, chromosomes, scale);
+    this.drawCohesion(node, unit, chromosomes, scale);
     // Anchor names at the centromere, which remains with its chromosome
     // even when a terminal segment is exchanged.
     const index =
@@ -223,6 +228,70 @@ export class CellView {
       (this.width < 450 ? 7.5 : 8.5) / scale,
     );
     node.labelPosition = { x: labelX, y: labelY, anchorY: top };
+  }
+
+  drawCohesion(node, unit, chromosomes, scale) {
+    node.cohesionLinks.forEach((link) => {
+      link.style.display = "none";
+    });
+    if (chromosomes.length !== 2) return;
+    const [original, sister] = chromosomes;
+    const left = original.balls.map(point),
+      right = sister.balls.map(point);
+    const boundary = (original.pattern.split("-")[0].match(/o/g) || []).length;
+    const centromere = (points) => ({
+      x: (points[boundary - 1].x + points[boundary].x) / 2,
+      y: (points[boundary - 1].y + points[boundary].y) / 2,
+    });
+    const armCohesion =
+      this.phase !== "separate" &&
+      !["anaphase1_done", "telophase1_done"].includes(this.model.state);
+    const active = new Set(
+      (this.lab.crossoverHistory || [])
+        .filter((record) => record.status === "exchanging")
+        .flatMap((record) =>
+          record.transfers.flatMap((transfer) => transfer.segmentIds),
+        ),
+    );
+    const links = [
+      { a: centromere(left), b: centromere(right), central: true },
+    ];
+    if (armCohesion && original.detailed) {
+      for (let i = 0; i < left.length; i++) {
+        if (i === boundary - 1 || i === boundary) continue;
+        if (
+          active.has(original.balls[i].userData.segment.id) ||
+          active.has(sister.balls[i].userData.segment.id)
+        )
+          continue;
+        links.push({ a: left[i], b: right[i], central: false });
+      }
+    }
+    links.forEach(({ a, b, central }, i) => {
+      let link = node.cohesionLinks[i];
+      if (!link) {
+        link = svg("line", { "stroke-linecap": "round" });
+        link.appendChild(svg("title"));
+        node.cohesionLinks.push(link);
+        node.cohesion.appendChild(link);
+      }
+      link.style.display = "";
+      link.setAttribute("data-cohesion", central ? "centromere" : "arm");
+      link.setAttribute(
+        "data-sisters",
+        `${original.chromatidId} ${sister.chromatidId || "replicating"}`,
+      );
+      link.children[0].textContent = central
+        ? "Sister cohesion near the centromere; released in meiosis II"
+        : "Sister arm cohesion; released at anaphase I (schematic)";
+      link.setAttribute("x1", a.x);
+      link.setAttribute("y1", a.y);
+      link.setAttribute("x2", b.x);
+      link.setAttribute("y2", b.y);
+      link.setAttribute("stroke", central ? "#b88838" : "#c6a15b");
+      link.setAttribute("stroke-width", (central ? 4.5 : 1.6) / scale);
+      link.setAttribute("opacity", central ? 1 : 0.65);
+    });
   }
 
   drawSegments(node, unit, chromosomes, scale) {

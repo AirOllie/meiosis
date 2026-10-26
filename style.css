@@ -702,3 +702,11 @@ dialog p {
   font-weight: 600;
   pointer-events: none;
 }
+
+.cohesion-swatch {
+  width: 12px;
+  height: 4px;
+  display: inline-block;
+  border-radius: 2px;
+  background: #b88838;
+}

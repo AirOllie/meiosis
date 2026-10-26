@@ -1,7 +1,7 @@
 import { SchematicLab } from "./schematic_lab.js";
 import { HumanMeiosis } from "./human_meiosis.js";
 import { shortChromatid, shortSegment } from "./schematic_view.js";
-import { CellView } from "./cell_view.js";
+import { CellView } from "./cell_view.js?v=cohesion";
 
 const $ = (id) => document.getElementById(id);
 const sex =

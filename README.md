@@ -32,6 +32,8 @@ Internally, immutable IDs such as `1A-O-05` and `1A-S1-05` retain birth chromoso
 
 The SVG cell view reads the model's chromosome/segment positions on successive animation frames. Replication creates sisters, pairing moves all 23 pairs, crossover moves the actual exchanged segments, and anaphase moves homologs to opposite poles. Cell outlines stretch and constrict during cytokinesis, ending with two and then four separate cell boundaries. Numbered DNA segments follow the actual exchanged balls in that same diagram; no separate detail view is used. Labels are packed to reduce collisions while preserving chromosome identity.
 
+Gold bridges connect each replicated chromosome to its own sister in the same cell diagram. The detailed pairs also show arm cohesion. Arm bridges disappear at anaphase I; cohesion near the centromere remains through meiosis I and is removed when meiosis II separates sisters. These are schematic cohesin links, not DNA connections between homologs.
+
 The original GeneLab exchange and segregation methods remain the underlying model. A headless adapter avoids the old WebGL display and floating DOM labels. The renderer uses a 2D schematic projection; it is not a physical model of cell mechanics.
 
 ## XX / XY and Scope
@@ -54,6 +56,6 @@ npm run check
 npm test
 ```
 
-The 33 tests cover both full XX/XY lifecycles, counts and chromosome conservation, independent assortment, unique tetrad groups, stable segment and short display IDs, PAR-restricted X/Y exchanges on both diagonals, every eligible cut in the original small-scene regression tests, crossover progress, actual intermediate-frame chromosome movement, a changing membrane neck, and all 92 chromosome labels across four final products.
+The 35 tests cover both full XX/XY lifecycles, counts and chromosome conservation, independent assortment, unique tetrad groups, stable segment and short display IDs, PAR-restricted X/Y exchanges on both diagonals, every eligible cut in the original small-scene regression tests, crossover progress, actual intermediate-frame chromosome movement, a changing membrane neck, and all 92 chromosome labels across four final products.
 
 Original project: [rhulha/meiosis](https://github.com/rhulha/meiosis).

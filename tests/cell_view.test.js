@@ -217,3 +217,84 @@ test("one cell diagram shows only the two detailed pairs and retains exchanged s
     before,
   );
 });
+
+for (const sex of ["XX", "XY"]) {
+  test(`${sex}: cohesion joins each chromosome to its own sister through meiosis I and releases in II`, async (t) => {
+    const lab = new SchematicLab();
+    const model = new HumanMeiosis(lab, sex);
+    const view = new CellView(new SvgNode("container"), model, lab);
+    const links = () =>
+      [...view.nodes.values()].flatMap((node) =>
+        node.group.style.display === "none"
+          ? []
+          : node.cohesionLinks.filter((link) => link.style.display !== "none"),
+      );
+    const central = () =>
+      links().filter(
+        (link) => link.getAttribute("data-cohesion") === "centromere",
+      );
+    assert.equal(links().length, 0);
+    view.update("duplicate");
+    view.frame();
+    assert.equal(central().length, 46);
+    await model.duplicate(0);
+    view.update(null);
+    view.frame();
+    assert.equal(central().length, 46);
+    assert.ok(links().length > 46);
+    const checkEndpoints = () => {
+      for (const pair of model.pairs) {
+        pair.members.forEach((chromosome, i) => {
+          const sister = pair.sisters[i];
+          const link = view.nodes.get(chromosome.chromatidId).cohesionLinks[0];
+          assert.equal(
+            link.getAttribute("data-sisters"),
+            `${chromosome.chromatidId} ${sister.chromatidId}`,
+          );
+          const boundary = chromosome.pattern.split("-")[0].length;
+          for (const [member, endpoint] of [
+            [chromosome, 1],
+            [sister, 2],
+          ]) {
+            const [a, b] = [member.balls[boundary - 1], member.balls[boundary]];
+            assert.equal(
+              Number(link.getAttribute(`x${endpoint}`)),
+              (a.position.x +
+                b.position.x +
+                (a.position.z + b.position.z) * 1.7) /
+                2,
+            );
+            assert.equal(
+              Number(link.getAttribute(`y${endpoint}`)),
+              -(a.position.y + b.position.y) / 2,
+            );
+          }
+        });
+      }
+    };
+    checkEndpoints();
+    let now = 0;
+    t.mock.method(Date, "now", () => (now += 10000));
+    await model.formTetrads(1);
+    await model.crossover(1);
+    view.frame();
+    checkEndpoints();
+    view.update("separate");
+    view.frame();
+    assert.equal(links().length, 46);
+    await model.separate(1);
+    view.update(null);
+    view.frame();
+    checkEndpoints();
+    await model.divide(1);
+    view.frame();
+    assert.equal(links().length, 46);
+    view.update("divideAgain");
+    view.frame();
+    assert.equal(links().length, 0);
+    await model.divideAgain(1);
+    view.update(null);
+    view.frame();
+    assert.equal(links().length, 0);
+  });
+}
