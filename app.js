@@ -236,7 +236,11 @@ function render() {
   arrow.setAttribute("aria-hidden", "true");
   mainButton.appendChild(arrow);
   mainButton.disabled = Boolean(phase) || autoPlay;
-  $("playBtn").textContent = autoPlay ? "Stop" : "Play";
+  $("playBtn").textContent = autoPlay
+    ? "Stop"
+    : model.state === "done"
+      ? "Replay"
+      : "Play";
   $("playBtn").disabled = Boolean(phase) && !autoPlay;
   $("playBtn").title = autoPlay
     ? "Stop after the current stage"
@@ -289,7 +293,9 @@ $("playBtn").addEventListener("click", async () => {
   }
   if (phase) return;
   if (model.state === "done") {
-    location.reload();
+    const url = new URL(location.href);
+    url.searchParams.set("run", "1");
+    location.assign(url);
     return;
   }
   autoPlay = true;
@@ -308,3 +314,9 @@ $("infoOverlay").addEventListener("click", (event) => {
   if (event.target === $("infoOverlay")) $("infoOverlay").close();
 });
 render();
+if (new URLSearchParams(location.search).get("run") === "1") {
+  const url = new URL(location.href);
+  url.searchParams.delete("run");
+  history.replaceState(null, "", url);
+  $("playBtn").click();
+}
