@@ -25,6 +25,28 @@
     <button id="duplicateBtn">Duplicate Chromosomes</button>
     <button id="infoBtn">i</button>
 
+    <aside id="trackingPanel" aria-label="DNA segment tracking">
+        <details id="trackerDetails" open>
+        <summary>DNA segment tracker</summary>
+        <label><input id="showSegmentIds" type="checkbox" checked> Show segment IDs</label>
+        <label class="focus-control">Label focus <select id="labelFocus" aria-label="Label focus"></select></label>
+        <p>Each ball has a unique ID that stays with it during exchange. Balls represent abstract DNA segments.</p>
+        <p><strong>O</strong> = starting chromatid (solid label); <strong>S1</strong> = its sister made in S phase (dashed label). These mark model copies, not old/new DNA strands.</p>
+        <p>Homolog pairs: <strong>C1 ↔ C3</strong> and <strong>C2 ↔ C4</strong>. Orange labels mark moving segments.</p>
+        <p>Choose one chromatid to read overlapping IDs. Focus follows its current contents after exchange.</p>
+        <details>
+            <summary>Current chromatid contents</summary>
+            <p>Rows show current owners; hover or focus an ID for its birth origin and copy source.</p>
+            <div id="chromatidContents"></div>
+        </details>
+        <details id="exchangeDetails">
+            <summary>Exchange history</summary>
+            <p id="exchangeStatus" role="status">No exchanges yet. Form tetrads, then click Crossover.</p>
+            <div id="exchangeHistory"></div>
+        </details>
+        </details>
+    </aside>
+
     <div id="infoOverlay">
         <div id="infoBox">
             <button id="infoClose">&times;</button>
@@ -52,6 +74,7 @@
         overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.classList.remove('open'); });
 
         import { GeneLab } from './gene_lab.js';
+        import { setupSegmentPanel } from './segment_panel.js';
 
         const lab = new GeneLab();
 
@@ -63,6 +86,9 @@
         const chromo3 = lab.addChromosome("oo-oooo", yellow, 5, 10);
         const chromo4 = lab.addChromosome("ooo-ooooooo", red, 10, -5);
 
+        const chromosomes = [chromo1, chromo2, chromo3, chromo4];
+        const refreshTracking = setupSegmentPanel(lab, chromosomes);
+
         const membrane = lab.addMembrane([chromo1, chromo2, chromo3, chromo4]);
 
         let chromo1_copy, chromo2_copy, chromo3_copy, chromo4_copy;
@@ -71,7 +97,7 @@
         const btn = document.getElementById('duplicateBtn');
 
         btn.disabled = true;
-        stepLabel.textContent = 'Interphase — homologs paired as bivalents';
+        stepLabel.textContent = 'Interphase — four unreplicated chromosomes';
         btn.disabled = false;
 
         btn.addEventListener('click', async () => {
@@ -88,6 +114,8 @@
                 ]);
 
                 membrane.chromosomes.push(chromo1_copy, chromo2_copy, chromo3_copy, chromo4_copy);
+                chromosomes.push(chromo1_copy, chromo2_copy, chromo3_copy, chromo4_copy);
+                refreshTracking();
 
                 state = 'duplicated';
                 btn.textContent = 'Form Tetrads';

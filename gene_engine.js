@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { DragControls } from 'three/addons/controls/DragControls.js';
+import { CSS2DObject, CSS2DRenderer } from 'three/addons/renderers/CSS2DRenderer.js';
 
 export class GeneEngine {
     constructor(container) {
@@ -11,6 +12,13 @@ export class GeneEngine {
 
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.container.appendChild(this.renderer.domElement);
+
+        this.segmentLabelsVisible = true;
+        this.labelRenderer = new CSS2DRenderer();
+        this.labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        this.labelRenderer.domElement.className = 'segment-label-layer';
+        this.labelRenderer.domElement.setAttribute('aria-hidden', 'true');
+        this.container.appendChild(this.labelRenderer.domElement);
 
         this.camera.position.z = 60;
 
@@ -85,6 +93,42 @@ export class GeneEngine {
         this.scene.add(sphere);
         this.draggableObjects.push(sphere);
         return sphere;
+    }
+
+    labelSegment(ball, segment) {
+        // Identity belongs to the mesh, never to its current array position.
+        ball.userData.segment = Object.freeze(segment);
+        const element = document.createElement('span');
+        element.className = 'segment-label';
+        element.textContent = segment.id;
+        element.dataset.chromatid = segment.originChromatidId;
+        element.classList.toggle('sister-segment', segment.copiedFromId !== null);
+        const label = new CSS2DObject(element);
+        label.visible = this.segmentLabelsVisible &&
+            (!this.focusedChromatid || this.focusedChromatid.balls.includes(ball));
+        ball.add(label);
+        ball.userData.segmentLabel = label;
+    }
+
+    setSegmentLabelsVisible(visible) {
+        this.segmentLabelsVisible = visible;
+        for (const ball of this.draggableObjects) {
+            if (ball.userData.segmentLabel) {
+                ball.userData.segmentLabel.visible = visible &&
+                    (!this.focusedChromatid || this.focusedChromatid.balls.includes(ball));
+            }
+        }
+    }
+
+    setSegmentLabelFocus(chromosome) {
+        this.focusedChromatid = chromosome;
+        this.setSegmentLabelsVisible(this.segmentLabelsVisible);
+    }
+
+    highlightSegments(balls, exchanging) {
+        for (const ball of balls) {
+            ball.userData.segmentLabel?.element.classList.toggle('exchanging', exchanging);
+        }
     }
 
     addConnectedBall(parent) {
@@ -346,11 +390,13 @@ export class GeneEngine {
         this.updatePhysics();
         this.controls.update();
         this.renderer.render(this.scene, this.camera);
+        this.labelRenderer.render(this.scene, this.camera);
     }
 
     onWindowResize() {
         this.camera.aspect = window.innerWidth / window.innerHeight;
         this.camera.updateProjectionMatrix();
         this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.labelRenderer.setSize(window.innerWidth, window.innerHeight);
     }
 }

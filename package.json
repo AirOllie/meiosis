@@ -1,0 +1,12 @@
+{
+  "name": "meiosis-segment-tracking",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "check": "node --check gene_engine.js && node --check gene_lab.js && node --check segment_panel.js"
+  },
+  "devDependencies": {
+    "three": "0.177.0"
+  }
+}

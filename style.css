@@ -3,6 +3,60 @@ body {
     overflow: hidden;
 }
 
+.segment-label-layer {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+}
+
+#titleBox, #duplicateBtn, #infoBtn { z-index: 3; }
+
+.segment-label, .segment-chip {
+    display: inline-block;
+    box-sizing: border-box;
+    color: white;
+    background: #111e;
+    border: 1px solid #fff;
+    border-radius: 4px;
+    padding: 1px 2px;
+    font: bold 10px/1.2 monospace;
+}
+
+.segment-label { pointer-events: none; }
+.sister-segment { border-style: dashed; }
+.segment-label.exchanging { background: #a63e00; border-color: #ffb74d; }
+
+#trackingPanel {
+    position: fixed;
+    z-index: 2;
+    right: 16px;
+    top: 76px;
+    width: 280px;
+    max-height: calc(100dvh - 180px);
+    overflow-y: auto;
+    box-sizing: border-box;
+    padding: 14px;
+    border: 1px solid #455a64;
+    border-radius: 10px;
+    background: #111923ed;
+    color: #e0e7ef;
+    font: 12px/1.5 sans-serif;
+}
+
+#trackingPanel > details > summary { padding: 0; font-size: 16px; font-weight: bold; color: white; }
+#trackingPanel > details[open] > summary { margin-bottom: 10px; }
+#trackingPanel h3 { font-size: 12px; color: #ffcc80; }
+#trackingPanel p { margin: 8px 0; overflow-wrap: anywhere; }
+#trackingPanel summary { cursor: pointer; padding: 6px 0; color: #90caf9; }
+#trackingPanel input { accent-color: #4caf50; }
+.focus-control { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
+#labelFocus { min-width: 0; flex: 1; color: white; background: #263442; border: 1px solid #78909c; border-radius: 4px; padding: 4px; }
+.chromatid-row { display: flex; flex-wrap: wrap; gap: 4px; padding: 6px 0; }
+.chromatid-row strong { width: 100%; }
+.segment-chip:focus { outline: 2px solid #ffb74d; outline-offset: 2px; }
+.exchange-record { border-top: 1px solid #455a64; margin-top: 8px; }
+
 #duplicateBtn {
     position: fixed;
     bottom: 20px;
@@ -123,4 +177,10 @@ body {
     color: #aaa;
     font-size: 22px;
     cursor: pointer;
+}
+
+@media (max-width: 700px) {
+    #trackingPanel { top: auto; bottom: 86px; right: 8px; width: 230px; max-height: 30dvh; }
+    #titleBox { width: calc(100% - 100px); }
+    #titleBox h1 { font-size: 17px; }
 }
