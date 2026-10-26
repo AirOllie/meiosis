@@ -104,6 +104,8 @@ export class GeneEngine {
         element.dataset.chromatid = segment.originChromatidId;
         element.classList.toggle('sister-segment', segment.copiedFromId !== null);
         const label = new CSS2DObject(element);
+        // Keep the longer origin-based IDs apart for adjacent sister copies.
+        label.center.x = segment.copiedFromId === null ? 1.05 : -0.05;
         label.visible = this.segmentLabelsVisible &&
             (!this.focusedChromatid || this.focusedChromatid.balls.includes(ball));
         ball.add(label);
