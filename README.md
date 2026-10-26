@@ -1,40 +1,50 @@
-# Meiosis 3D Simulation
+# Human Meiosis
 
-An interactive 3D animation that walks you through every stage of meiosis — the cell division that produces gametes (sperm and egg cells).
+An animated scientific schematic with all **22 autosome pairs and an XX or XY sex pair**. The cell view shows chromosome movement and membrane division continuously. Only chromosome 1 and the sex pair resolve individual DNA segments; the other 21 pairs remain present and participate in both divisions.
 
-## What You'll See
+## Controls
 
-Click through each stage and watch it happen in 3D:
+- **XX / XY** selects the starting karyotype and resets the run. XY is the default; `?sex=XX` selects XX.
+- **Play** runs the complete sequence. **Stop** stops after the current stage. The primary action button advances one stage at a time; the circular arrow resets the run.
+- **Chromosome 1 / Sex pair** selects the detailed segment diagram. Exchange records and model notes are collapsed by default.
+- Hover over a detailed segment for its stable birth identity, current owner, and copy source.
 
-1. **S Phase** — Each chromosome duplicates, forming sister chromatids joined at the centromere.
-2. **Prophase I** — Homologous chromosomes pair up (synapsis) and crossing over swaps segments between non-sister chromatids, creating new genetic combinations.
-3. **Anaphase I** — Homologous pairs are pulled to opposite poles. Sister chromatids stay together.
-4. **Telophase I** — The cell divides into two haploid daughter cells.
-5. **Meiosis II** — Sister chromatids separate and each cell divides again, producing four unique haploid gametes.
+## Counts
 
-## How to Use
+| Stage            | Cells/products | Chromosomes per cell | Chromatids per cell |
+| ---------------- | -------------- | -------------------- | ------------------- |
+| Before S phase   | 1              | 46                   | 46                  |
+| After S phase    | 1              | 46                   | 92                  |
+| After meiosis I  | 2              | 23                   | 46                  |
+| After meiosis II | 4              | 23                   | 23                  |
 
-Try it here: [https://rhulha.github.io/meiosis/](https://rhulha.github.io/meiosis/)
+Each pair independently chooses its orientation at anaphase I. Each final product receives one chromosome from every autosome pair and one sex chromosome. XY produces two X-bearing and two Y-bearing products; XX produces four X-bearing products.
 
-Click the button to advance through each stage. You can rotate the view with the right mouse button, pan with the left, and zoom with the scroll wheel.
+## Numbering and Segment Origins
 
-## Track DNA Segments
+Every chromosome has a short visible number: **1A / 1B** through **22A / 22B**. The sex pair is numbered **23A / 23B**, corresponding to X/X in XX mode or X/Y in XY mode. A prime, such as **1A′**, marks the sister copy; once separated in meiosis II it is a chromosome in its own right.
 
-Every ball represents an **abstract DNA segment**, not a nucleotide, and has a unique ID such as `C1-O-01`. IDs are assigned at birth and stay attached to the same ball through crossing over and both divisions. Restart begins a new run with the same initial numbering.
+Only the detailed view displays segment numbers **01, 02, …**. Corresponding copies share the same position suffix. Color identifies the birth homolog, including after exchange. A source identity such as **1A′·05** remains unique and follows the segment; it appears in tooltips and the optional exchange log rather than on every object in the main cell.
 
-- `C1`–`C4` identify the four starting chromosomes. Homolog pairs are **C1/C3** and **C2/C4**.
-- `C1-O` is C1's starting chromatid; `C1-S1` is its sister produced in S phase. `O`/`S1` describe model copies, not old/new strands of a DNA double helix.
-- Solid ID borders mark starting segments; dashed borders mark sister-copy segments. Corresponding positions use matching suffixes: `C1-O-01` is copied to `C1-S1-01`, `C1-O-02` to `C1-S1-02`, and so on. The prefix identifies the birth chromosome and chromatid, so all 64 full IDs remain unique. Matching suffixes indicate corresponding positions before exchange, not that DNA sequences in different homologs must be identical.
-- **Show segment IDs** toggles labels, including labels created while it is off. Labels follow balls when the view rotates, balls are dragged, and chromosomes move.
-- **Label focus** shows only one chromatid's current segment labels, making overlapping chromatids easier to read. After exchange it follows the chosen chromatid's new contents, including segments received from its homolog. The tracker starts collapsed on small screens to leave the model visible.
-- **Current chromatid contents** lists the IDs currently in each chromatid. Hover or keyboard-focus an ID for its birth chromatid, original position, and source segment if it was copied. Its origin stays the same when its current owner changes.
-- **Exchange history** opens during crossover. Orange labels mark moving segments. Each record names the randomly selected non-sister chromatids, the cut between two positions, both transferred ID lists, and expandable before/after sequences. Positions are 1-based slots; IDs are persistent identities. Both records remain available through the final gametes.
+Internally, immutable IDs such as `1A-O-05` and `1A-S1-05` retain birth chromosome, chromatid, position, and copy-source metadata. Display shortening never renumbers an exchanged segment. The human sex-chromosome roots (`XA`/`XB` or `X`/`Y`) map to visible numbers 23A/23B.
 
-For example, an exchange from `C1-O` to `C3-S1` moves C1's numbered balls into C3's sister; their numbers and birth origins remain C1's. The unchanged sisters keep their original contents. Rotate or zoom to separate labels that overlap in a projected 3D view.
+## Animation
 
-## Run and Verify Locally
+The SVG cell view reads the model's chromosome/segment positions on successive animation frames. Replication creates sisters, pairing moves all 23 pairs, crossover moves the actual exchanged segments, and anaphase moves homologs to opposite poles. Cell outlines stretch and constrict during cytokinesis, ending with two and then four separate cell boundaries. The detailed view also animates the exchanged segments. Labels are packed to reduce collisions while preserving chromosome identity.
 
-This is a static browser app; there is no build step. Serve this directory with an HTTP server (for example, `python3 -m http.server 8000`) and open `http://localhost:8000`. The browser imports the pinned Three.js 0.177.0 modules from jsDelivr, so an internet connection is needed.
+The original GeneLab exchange and segregation methods remain the underlying model. A headless adapter avoids the old WebGL display and floating DOM labels. The renderer uses a 2D schematic projection; it is not a physical model of cell mechanics.
+
+## XX / XY and Scope
+
+XX uses two equal-length schematic X chromosomes, with eligible exchanges on either arm. XY has a longer X and shorter Y. Only the outlined terminal **PAR1** segment can exchange between X and Y; chromosome-specific arms and lengths stay intact. Either randomly selected diagonal of non-sister chromatids obeys this restriction.
+
+Other autosomes segregate normally, but their molecular recombination is not resolved. Chromosome lengths, spatial arrangement, and segment sizes are illustrative. XX mode depicts chromosome segregation into four equal-sized products, not unequal oocyte division and polar bodies.
+
+References: [NHGRI chromosome counts](https://www.genome.gov/about-genomics/fact-sheets/Chromosome-Abnormalities-Fact-Sheet), [NLM pseudoautosomal regions](https://meshb.nlm.nih.gov/record/ui?ui=D000071439).
+
+## Run and Verify
+
+This is a static app with no build step. Serve this directory over HTTP, for example with `python3 -m http.server 8000`, then open `http://localhost:8000`. The pinned Three.js 0.177.0 modules require access to jsDelivr.
 
 With Node.js 18 or later:
 
@@ -44,8 +54,6 @@ npm run check
 npm test
 ```
 
-Tests cover deterministic IDs during concurrent replication, label visibility, immutable birth metadata, both homolog pairs and random diagonals, every eligible cut on both centromere arms, preservation of the same mesh/label objects, connection rewiring, unchanged nonparticipants, and before/after history snapshots.
+The 32 tests cover both full XX/XY lifecycles, counts and chromosome conservation, independent assortment, unique tetrad groups, stable segment and short display IDs, PAR-restricted X/Y exchanges on both diagonals, every eligible cut in the original small-scene regression tests, crossover progress, actual intermediate-frame chromosome movement, a changing membrane neck, and all 92 chromosome labels across four final products.
 
-## Preview
-
-![Meiosis Simulation](./example.jpg)
+Original project: [rhulha/meiosis](https://github.com/rhulha/meiosis).

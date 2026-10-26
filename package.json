@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "test": "node --test tests/*.test.js",
-    "check": "node --check gene_engine.js && node --check gene_lab.js && node --check segment_panel.js"
+    "check": "node --check gene_engine.js && node --check gene_lab.js && node --check human_meiosis.js && node --check schematic_lab.js && node --check schematic_view.js && node --check cell_view.js && node --check app.js"
   },
   "devDependencies": {
     "three": "0.177.0"

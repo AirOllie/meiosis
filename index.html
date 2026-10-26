@@ -1,195 +1,163 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GeneLab Demo</title>
-    <link rel="stylesheet" href="style.css">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Human meiosis</title>
+    <link rel="stylesheet" href="./style.css" />
     <script type="importmap">
-        {
-            "imports": {
-            "three": "https://cdn.jsdelivr.net/npm/three@0.177.0/build/three.module.js",
-            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.177.0/examples/jsm/"
-            }
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.177.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.177.0/examples/jsm/"
         }
+      }
     </script>
-
-</head>
-
-<body>
-    <div id="titleBox">
-        <h1>Meiosis Animation 3D</h1>
-        <p id="currentStep">Interphase — chromosomes in resting state</p>
-    </div>
-    <button id="duplicateBtn">Duplicate Chromosomes</button>
-    <button id="infoBtn">i</button>
-
-    <aside id="trackingPanel" aria-label="DNA segment tracking">
-        <details id="trackerDetails" open>
-        <summary>DNA segment tracker</summary>
-        <label><input id="showSegmentIds" type="checkbox" checked> Show segment IDs</label>
-        <label class="focus-control">Label focus <select id="labelFocus" aria-label="Label focus"></select></label>
-        <p>Each ball has a unique ID that stays with it during exchange. Balls represent abstract DNA segments.</p>
-        <p><strong>C1-O-01 ↔ C1-S1-01</strong>: matching suffixes mark corresponding segments before exchange; prefixes distinguish the two copies. The full ID keeps its birth origin after exchange.</p>
-        <p><strong>O</strong> = starting chromatid (solid label); <strong>S1</strong> = its sister made in S phase (dashed label). These mark model copies, not old/new DNA strands.</p>
-        <p>Homolog pairs: <strong>C1 ↔ C3</strong> and <strong>C2 ↔ C4</strong>. Orange labels mark moving segments.</p>
-        <p>Choose one chromatid to read overlapping IDs. Focus follows its current contents after exchange.</p>
-        <details>
-            <summary>Current chromatid contents</summary>
-            <p>Rows show current owners; hover or focus an ID for its birth origin and copy source.</p>
-            <div id="chromatidContents"></div>
-        </details>
-        <details id="exchangeDetails">
-            <summary>Exchange history</summary>
-            <p id="exchangeStatus" role="status">No exchanges yet. Form tetrads, then click Crossover.</p>
-            <div id="exchangeHistory"></div>
-        </details>
-        </details>
-    </aside>
-
-    <div id="infoOverlay">
-        <div id="infoBox">
-            <button id="infoClose">&times;</button>
-            <h2>What is Meiosis?</h2>
-            <p>Meiosis is the type of cell division that produces gametes (sperm and egg cells). It reduces the chromosome number by half, ensuring offspring receive the correct number of chromosomes upon fertilization.</p>
-            <ol>
-                <li><strong>Prophase I</strong> — Homologous chromosomes pair up; crossing over exchanges genetic material between non-sister chromatids.</li>
-                <li><strong>Metaphase I</strong> — Homologous pairs align at the cell equator.</li>
-                <li><strong>Anaphase I</strong> — Homologous pairs are pulled to opposite poles; sister chromatids stay joined.</li>
-                <li><strong>Telophase I</strong> — Two haploid cells form, each with duplicated chromosomes.</li>
-                <li><strong>Prophase II</strong> — Chromosomes condense again in both cells.</li>
-                <li><strong>Metaphase II</strong> — Individual chromosomes align at the metaphase plate.</li>
-                <li><strong>Anaphase II</strong> — Sister chromatids are pulled apart.</li>
-                <li><strong>Telophase II</strong> — Four haploid daughter cells (gametes) form with unique genetic combinations.</li>
-            </ol>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="masthead">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">✳</span
+          ><span>MEIOSIS<small>HUMAN CHROMOSOME MODEL</small></span>
         </div>
+        <div class="header-controls">
+          <div class="sex-control" role="group" aria-label="Sex chromosomes">
+            <button data-sex="XX" aria-pressed="false">XX</button
+            ><button data-sex="XY" aria-pressed="true">XY</button>
+          </div>
+          <button class="quiet-button" id="infoBtn">Notes</button>
+        </div>
+      </header>
+      <section class="introduction">
+        <div><h1>Human meiosis</h1></div>
+        <div
+          id="populationSummary"
+          class="count-group"
+          aria-label="Current counts"
+          role="status"
+        ></div>
+      </section>
+      <nav id="stageTimeline" class="stage-timeline" aria-label="Stages"></nav>
+      <main class="workspace">
+        <section class="genome-panel panel">
+          <div class="panel-heading">
+            <div><h2>Cell division</h2></div>
+            <div class="board-tools">
+              <span id="karyotypeBadge" class="soft-badge"></span>
+            </div>
+          </div>
+          <div class="board-legend">
+            <span><i class="legend-dot origin-a"></i>A / B: homologs</span
+            ><span><i class="membrane-swatch"></i>Cell membrane</span>
+          </div>
+          <div id="genomeBoard"></div>
+          <div class="board-footnote">
+            <span id="boardNote">46 chromosomes</span
+            ><span>Schematic · not to scale</span>
+          </div>
+        </section>
+        <aside class="detail-panel panel" aria-label="Detailed DNA segments">
+          <div class="panel-heading">
+            <div><h2>DNA segments</h2></div>
+            <span class="tiny-badge">1 + sex pair</span>
+          </div>
+          <div class="detail-tabs" role="group" aria-label="Detailed pair">
+            <button data-pair="1" aria-pressed="true">Chromosome 1</button
+            ><button data-pair="sex" aria-pressed="false">Sex pair</button>
+          </div>
+          <div class="detail-caption">
+            <strong id="detailTitle"></strong><span id="detailSubtitle"></span>
+          </div>
+          <div id="detailDiagram"></div>
+          <div class="notation">
+            <span><b>01</b> segment</span><span><b>′</b> sister copy</span>
+          </div>
+          <div
+            id="exchangeSummary"
+            class="exchange-summary"
+            role="status"
+          ></div>
+          <details id="exchangeDetails" class="exchange-details">
+            <summary>Exchange log <span id="exchangeCount">0</span></summary>
+            <div id="exchangeHistory"></div>
+          </details>
+        </aside>
+      </main>
+      <footer class="action-bar">
+        <div class="current-stage">
+          <span class="status-dot"></span>
+          <div>
+            <strong id="currentStep"></strong>
+            <p id="stepDescription"></p>
+          </div>
+        </div>
+        <div class="action-buttons">
+          <button
+            id="playBtn"
+            class="play-button"
+            title="Play the complete sequence"
+          >
+            Play
+          </button>
+          <button
+            id="resetBtn"
+            class="reset-button"
+            aria-label="Restart"
+            title="Restart"
+          >
+            ↺</button
+          ><button id="duplicateBtn" class="primary-button">
+            Replicate <span aria-hidden="true">→</span>
+          </button>
+        </div>
+      </footer>
+      <p class="page-note">
+        Detailed segments: chromosome 1 and the sex pair. The remaining 21 pairs
+        are simplified.
+      </p>
     </div>
-
-    <script type="module">
-        const $ = (id) => document.getElementById(id);
-        const stepLabel = $('currentStep');
-        const overlay = $('infoOverlay');
-        $('infoBtn').addEventListener('click', () => overlay.classList.add('open'));
-        $('infoClose').addEventListener('click', () => overlay.classList.remove('open'));
-        overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.classList.remove('open'); });
-
-        import { GeneLab } from './gene_lab.js';
-        import { setupSegmentPanel } from './segment_panel.js';
-
-        const lab = new GeneLab();
-
-        const yellow = 0xffff00;
-        const red = 0xff1493;
-
-        const chromo1 = lab.addChromosome("oo-oooo", red, -15, 5);
-        const chromo2 = lab.addChromosome("ooo-ooooooo", yellow, -5, 8);
-        const chromo3 = lab.addChromosome("oo-oooo", yellow, 5, 10);
-        const chromo4 = lab.addChromosome("ooo-ooooooo", red, 10, -5);
-
-        const chromosomes = [chromo1, chromo2, chromo3, chromo4];
-        const refreshTracking = setupSegmentPanel(lab, chromosomes);
-
-        const membrane = lab.addMembrane([chromo1, chromo2, chromo3, chromo4]);
-
-        let chromo1_copy, chromo2_copy, chromo3_copy, chromo4_copy;
-        let membraneA, membraneB;
-        let state = 'initial';
-        const btn = document.getElementById('duplicateBtn');
-
-        btn.disabled = true;
-        stepLabel.textContent = 'Interphase — four unreplicated chromosomes';
-        btn.disabled = false;
-
-        btn.addEventListener('click', async () => {
-            btn.disabled = true;
-
-            if (state === 'initial') {
-                btn.textContent = 'Duplicating...';
-                stepLabel.textContent = 'S Phase — chromosomes duplicating';
-                [chromo1_copy, chromo2_copy, chromo3_copy, chromo4_copy] = await Promise.all([
-                    lab.duplicateChromosome(chromo1, 2.2, 0, 0, 150),
-                    lab.duplicateChromosome(chromo2, 2.2, 0, 0, 150),
-                    lab.duplicateChromosome(chromo3, 2.2, 0, 0, 150),
-                    lab.duplicateChromosome(chromo4, 2.2, 0, 0, 150)
-                ]);
-
-                membrane.chromosomes.push(chromo1_copy, chromo2_copy, chromo3_copy, chromo4_copy);
-                chromosomes.push(chromo1_copy, chromo2_copy, chromo3_copy, chromo4_copy);
-                refreshTracking();
-
-                state = 'duplicated';
-                btn.textContent = 'Form Tetrads';
-                stepLabel.textContent = 'Prophase I — homologs ready to pair';
-                btn.disabled = false;
-            } else if (state === 'duplicated') {
-                btn.textContent = 'Forming Tetrads...';
-                stepLabel.textContent = 'Prophase I — homologs pairing (synapsis)';
-                await Promise.all([
-                    lab.formTetrad4(chromo1, chromo1_copy, chromo3, chromo3_copy, 2.2),
-                    lab.formTetrad4(chromo2, chromo2_copy, chromo4, chromo4_copy, 2.2)
-                ]);
-
-                state = 'tetrads_formed';
-                btn.textContent = 'Crossover';
-                stepLabel.textContent = 'Prophase I — tetrads formed, ready for crossover';
-                btn.disabled = false;
-            } else if (state === 'tetrads_formed') {
-                btn.textContent = 'Crossing Over...';
-                stepLabel.textContent = 'Prophase I — crossing over in progress';
-                await Promise.all([
-                    lab.crossoverTetrad([chromo1, chromo1_copy], [chromo3, chromo3_copy]),
-                    lab.crossoverTetrad([chromo2, chromo2_copy], [chromo4, chromo4_copy])
-                ]);
-
-                state = 'crossover_done';
-                btn.textContent = 'Anaphase I';
-                stepLabel.textContent = 'Prophase I — crossover complete, genetic recombination done';
-                btn.disabled = false;
-            } else if (state === 'crossover_done') {
-                btn.textContent = 'Separating...';
-                stepLabel.textContent = 'Anaphase I — homologous pairs pulling apart';
-                await lab.anaphaseI(
-                    [chromo1, chromo1_copy, chromo2, chromo2_copy],
-                    [chromo3, chromo3_copy, chromo4, chromo4_copy],
-                    25, 3000
-                );
-                state = 'anaphase1_done';
-                btn.textContent = 'Telophase I';
-                stepLabel.textContent = 'Anaphase I — homologs at opposite poles, sister chromatids intact';
-                btn.disabled = false;
-            } else if (state === 'anaphase1_done') {
-                btn.textContent = 'Dividing...';
-                stepLabel.textContent = 'Telophase I — cytokinesis, cell dividing into two';
-                [membraneA, membraneB] = await lab.cytokinesis(
-                    membrane,
-                    [chromo1, chromo1_copy, chromo2, chromo2_copy],
-                    [chromo3, chromo3_copy, chromo4, chromo4_copy],
-                    20
-                );
-                state = 'telophase1_done';
-                btn.textContent = 'Meiosis II';
-                stepLabel.textContent = 'Telophase I — two haploid cells formed';
-                btn.disabled = false;
-            } else if (state === 'telophase1_done') {
-                btn.textContent = 'Dividing...';
-                stepLabel.textContent = 'Meiosis II — sister chromatids separating';
-                await lab.meiosisII(
-                    membraneA, membraneB,
-                    [[chromo1, chromo1_copy], [chromo2, chromo2_copy]],
-                    [[chromo3, chromo3_copy], [chromo4, chromo4_copy]],
-                    15, 3000
-                );
-                state = 'done';
-                btn.textContent = 'Restart';
-                stepLabel.textContent = 'Meiosis complete — four unique haploid gametes formed';
-                btn.disabled = false;
-            } else if (state === 'done') {
-                location.reload();
-            }
-        });
-
-    </script>
-</body>
-
+    <dialog id="infoOverlay">
+      <div class="help-heading">
+        <h2>Model notes</h2>
+        <button id="infoClose" class="reset-button" aria-label="Close notes">
+          ×
+        </button>
+      </div>
+      <p>
+        <b>1A / 1B</b> identify the two homologs of chromosome 1.
+        <b>23A / 23B</b> identify the sex pair: X/X in XX mode, X/Y in XY mode.
+      </p>
+      <p>
+        <b>1A′</b> marks the sister copy of 1A. Replication produces 92
+        chromatids while the chromosome count stays 46. After meiosis II, each
+        product has 23 chromosomes.
+      </p>
+      <p>
+        Only chromosome 1 and the sex pair resolve DNA segments. Segment numbers
+        and birth origins stay with each exchanged segment; hover over a segment
+        for its origin.
+      </p>
+      <p>
+        XY crossover is restricted to the outlined terminal PAR1 segment. XX
+        mode shows chromosome segregation, not unequal oocyte division or polar
+        bodies. Shapes, lengths, and positions are schematic.
+      </p>
+      <p>Changing XX / XY starts a new run.</p>
+      <div class="help-sources">
+        <a
+          href="https://www.genome.gov/about-genomics/fact-sheets/Chromosome-Abnormalities-Fact-Sheet"
+          target="_blank"
+          rel="noreferrer"
+          >Chromosome counts · NHGRI ↗</a
+        ><a
+          href="https://meshb.nlm.nih.gov/record/ui?ui=D000071439"
+          target="_blank"
+          rel="noreferrer"
+          >PAR regions · NLM ↗</a
+        >
+      </div>
+    </dialog>
+    <script type="module" src="./app.js"></script>
+  </body>
 </html>

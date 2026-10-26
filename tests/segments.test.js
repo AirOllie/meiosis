@@ -104,11 +104,13 @@ test('moving labels are highlighted throughout the animation, then cleared on co
     now = 50;
     nextFrame();
     assert.equal(record.status, 'exchanging');
+    assert.equal(record.progress, 0.5);
     assert.equal(record.after, null);
     now = 100;
     nextFrame();
     await promise;
     assert.equal(record.status, 'complete');
+    assert.equal(record.progress, 1);
     assert.ok(lab.draggableObjects.every(ball => !ball.userData.segmentLabel.element.classList.contains('exchanging')));
 });
 
