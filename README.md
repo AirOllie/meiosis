@@ -20,11 +20,11 @@ Click the button to advance through each stage. You can rotate the view with the
 
 ## Track DNA Segments
 
-Every ball represents an **abstract DNA segment**, not a nucleotide, and has a unique numeric ID. IDs are assigned at birth and stay attached to the same ball through crossing over and both divisions. Restart begins a new run with the same initial numbering.
+Every ball represents an **abstract DNA segment**, not a nucleotide, and has a unique ID such as `C1-O-01`. IDs are assigned at birth and stay attached to the same ball through crossing over and both divisions. Restart begins a new run with the same initial numbering.
 
 - `C1`–`C4` identify the four starting chromosomes. Homolog pairs are **C1/C3** and **C2/C4**.
 - `C1-O` is C1's starting chromatid; `C1-S1` is its sister produced in S phase. `O`/`S1` describe model copies, not old/new strands of a DNA double helix.
-- Solid ID borders mark starting segments; dashed borders mark sister-copy segments. Original IDs are 01–32; the four sisters receive 33–38, 39–48, 49–54, and 55–64, respectively.
+- Solid ID borders mark starting segments; dashed borders mark sister-copy segments. Corresponding positions use matching suffixes: `C1-O-01` is copied to `C1-S1-01`, `C1-O-02` to `C1-S1-02`, and so on. The prefix identifies the birth chromosome and chromatid, so all 64 full IDs remain unique. Matching suffixes indicate corresponding positions before exchange, not that DNA sequences in different homologs must be identical.
 - **Show segment IDs** toggles labels, including labels created while it is off. Labels follow balls when the view rotates, balls are dragged, and chromosomes move.
 - **Label focus** shows only one chromatid's current segment labels, making overlapping chromatids easier to read. After exchange it follows the chosen chromatid's new contents, including segments received from its homolog. The tracker starts collapsed on small screens to leave the model visible.
 - **Current chromatid contents** lists the IDs currently in each chromatid. Hover or keyboard-focus an ID for its birth chromatid, original position, and source segment if it was copied. Its origin stays the same when its current owner changes.

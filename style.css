@@ -23,7 +23,7 @@ body {
     font: bold 10px/1.2 monospace;
 }
 
-.segment-label { pointer-events: none; }
+.segment-label { pointer-events: none; font-size: 9px; }
 .sister-segment { border-style: dashed; }
 .segment-label.exchanging { background: #a63e00; border-color: #ffb74d; }
 

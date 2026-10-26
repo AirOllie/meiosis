@@ -63,7 +63,8 @@ test('concurrent replication gives 64 unique, deterministic IDs with distinct si
     assert.equal(new Set(balls.map(b => b.userData.segment.id)).size, 64);
     assert.deepEqual(originals.map(c => c.chromatidId), ['C1-O', 'C2-O', 'C3-O', 'C4-O']);
     assert.deepEqual(copies.map(c => c.chromatidId), ['C1-S1', 'C2-S1', 'C3-S1', 'C4-S1']);
-    assert.deepEqual(copies.map(c => ids(c)[0]), ['33', '39', '49', '55']);
+    assert.deepEqual(originals.map(c => ids(c)[0]), ['C1-O-01', 'C2-O-01', 'C3-O-01', 'C4-O-01']);
+    assert.deepEqual(copies.map(c => ids(c)[0]), ['C1-S1-01', 'C2-S1-01', 'C3-S1-01', 'C4-S1-01']);
     for (let i = 0; i < originals.length; i++) {
         originals[i].balls.forEach((ball, index) => {
             const segment = ball.userData.segment;
@@ -72,6 +73,9 @@ test('concurrent replication gives 64 unique, deterministic IDs with distinct si
             assert.equal(copy.copiedFromId, segment.id);
             assert.equal(copy.originChromosomeId, segment.originChromosomeId);
             assert.equal(copy.originalIndex, index + 1);
+            const suffix = String(index + 1).padStart(2, '0');
+            assert.equal(segment.id, `${originals[i].chromatidId}-${suffix}`);
+            assert.equal(copy.id, `${copies[i].chromatidId}-${suffix}`);
             assert.ok(Object.isFrozen(copy));
         });
     }
@@ -80,7 +84,7 @@ test('concurrent replication gives 64 unique, deterministic IDs with distinct si
     assert.ok(balls.every(b => b.userData.segmentLabel.visible));
     const anotherSister = await lab.duplicateChromosome(originals[0], 2.2, 0, 0, 0);
     assert.equal(anotherSister.chromatidId, 'C1-S2');
-    assert.equal(ids(anotherSister)[0], '65');
+    assert.equal(ids(anotherSister)[0], 'C1-S2-01');
 });
 
 test('moving labels are highlighted throughout the animation, then cleared on completion', async t => {

@@ -2,15 +2,9 @@ import * as THREE from 'three';
 import { GeneEngine } from './gene_engine.js';
 
 export class GeneLab extends GeneEngine {
-    createChromatidIdentity(originChromosomeId, chromatidId, count) {
-        const start = this.nextSegmentNumber || 1;
-        this.nextSegmentNumber = start + count;
-        return { originChromosomeId, chromatidId, segmentStart: start };
-    }
-
     identifySegment(ball, identity, index, copiedFromId = null) {
         this.labelSegment(ball, {
-            id: String(identity.segmentStart + index).padStart(2, '0'),
+            id: `${identity.chromatidId}-${String(index + 1).padStart(2, '0')}`,
             originChromosomeId: identity.originChromosomeId,
             originChromatidId: identity.chromatidId,
             originalIndex: index + 1,
@@ -34,7 +28,7 @@ export class GeneLab extends GeneEngine {
         const numBalls = (pattern.match(/o/g) || []).length;
         this.chromosomeCount = (this.chromosomeCount || 0) + 1;
         const originId = `C${this.chromosomeCount}`;
-        const identity = this.createChromatidIdentity(originId, `${originId}-O`, numBalls);
+        const identity = { originChromosomeId: originId, chromatidId: `${originId}-O` };
         const z = numBalls - 9;
         const balls = [];
         let currentBall = this.addBall(x, y, z, color);
@@ -75,10 +69,9 @@ export class GeneLab extends GeneEngine {
         const originId = chromosome.originChromosomeId;
         const sisterNumber = (this.sisterCounts.get(originId) || 0) + 1;
         this.sisterCounts.set(originId, sisterNumber);
-        // Reserve the entire range before awaiting concurrent duplications.
-        const identity = this.createChromatidIdentity(
-            originId, `${originId}-S${sisterNumber}`, chromosome.balls.length
-        );
+        // Assign the sister identity before awaiting concurrent duplications.
+        // Matching positions share a suffix; the birth chromatid keeps IDs unique.
+        const identity = { originChromosomeId: originId, chromatidId: `${originId}-S${sisterNumber}` };
 
         const firstBall = chromosome.balls[0];
         const newFirst = this.popBall(
