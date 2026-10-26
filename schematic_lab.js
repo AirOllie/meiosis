@@ -1,4 +1,4 @@
-import { GeneLab } from "./gene_lab.js";
+import { GeneLab } from "./gene_lab.js?v=cell-atlas-5";
 
 // Reuse the tested segment exchange and segregation model without a WebGL
 // scene, physics loop, sound, or hundreds of floating DOM labels.

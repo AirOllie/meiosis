@@ -27,8 +27,8 @@ function envelope(chromosomes) {
   return {
     x: (left + right) / 2,
     y: (top + bottom) / 2,
-    rx: (right - left) * 0.59 + 12,
-    ry: (bottom - top) * 0.59 + 12,
+    rx: (right - left) * 0.66 + 15,
+    ry: (bottom - top) * 0.66 + 15,
   };
 }
 
@@ -52,21 +52,70 @@ export class CellView {
     Object.assign(this, { container, model, lab });
     this.phase = null;
     this.nodes = new Map();
+    this.zoom = 1;
     this.svg = svg("svg", {
       role: "img",
       "aria-label": "Animated cells and numbered chromosomes",
     });
+    const defs = svg("defs");
+    const cytoplasm = svg("radialGradient", {
+      id: "cytoplasm",
+      cx: "38%",
+      cy: "30%",
+      r: "72%",
+    });
+    for (const [offset, shade] of [
+      ["0%", "#fbf6ee"],
+      ["65%", "#e4eee8"],
+      ["92%", "#a6cbc2"],
+      ["100%", "#528f88"],
+    ])
+      cytoplasm.appendChild(svg("stop", { offset, "stop-color": shade }));
+    const nucleus = svg("radialGradient", {
+      id: "nucleoplasm",
+      cx: "38%",
+      cy: "28%",
+      r: "80%",
+    });
+    nucleus.append(
+      svg("stop", { offset: "0%", "stop-color": "#f8f5ff" }),
+      svg("stop", { offset: "100%", "stop-color": "#d9e1f1" }),
+    );
+    const shadow = svg("filter", {
+      id: "cell-shadow",
+      x: "-20%",
+      y: "-20%",
+      width: "140%",
+      height: "140%",
+    });
+    shadow.appendChild(
+      svg("feDropShadow", {
+        dx: 0,
+        dy: 1,
+        stdDeviation: 1.5,
+        "flood-color": "#264f55",
+        "flood-opacity": 0.12,
+      }),
+    );
+    defs.append(cytoplasm, nucleus, shadow);
+    this.svg.appendChild(defs);
     this.layer = svg("g");
     this.membranes = svg("g", { class: "cell-membranes" });
+    this.interior = svg("g", { class: "cell-interior" });
     this.strands = svg("g");
     this.labels = svg("g");
-    this.layer.append(this.membranes, this.strands, this.labels);
+    this.layer.append(this.membranes, this.interior, this.strands, this.labels);
     this.svg.appendChild(this.layer);
     container.replaceChildren(this.svg);
     container.className = "live-cell-view";
     this.observer = new ResizeObserver(() => this.update(this.phase));
     this.observer.observe(container);
     this.update(null);
+  }
+
+  setZoom(value) {
+    this.zoom = Math.max(0.2, Math.min(2, value));
+    this.update(this.phase);
   }
 
   update(phase) {
@@ -158,7 +207,9 @@ export class CellView {
       chromosomes.push({
         balls: unit.chromosome.balls.map((ball) => ({
           position: {
-            x: ball.position.x + 2.2 * progress,
+            x:
+              ball.position.x +
+              (unit.chromosome.detailed ? 5.8 : 2.2) * progress,
             y: ball.position.y,
             z: ball.position.z,
           },
@@ -185,7 +236,7 @@ export class CellView {
         line.setAttribute("stroke", color(chromosome.balls[i]));
         line.setAttribute(
           "stroke-width",
-          (points.length === 2 ? 4.2 : 4.6) / scale,
+          (unit.chromosome.detailed ? 7 : 6) / scale,
         );
         line.style.display = "";
       }
@@ -203,7 +254,7 @@ export class CellView {
       cap.setAttribute("y1", p.y);
       cap.setAttribute("y2", p.y);
       cap.setAttribute("stroke", color(chromosome.balls[0]));
-      cap.setAttribute("stroke-width", 4.8 / scale);
+      cap.setAttribute("stroke-width", 7 / scale);
       cap.style.display = "";
     }
     node.lines.slice(n).forEach((line) => {
@@ -220,12 +271,12 @@ export class CellView {
     );
     const top = Math.min(...unit.chromosome.balls.map((ball) => point(ball).y));
     const labelX = anchors.reduce((sum, p) => sum + p.x, 0) / anchors.length;
-    const labelY = top - (unit.chromosome.detailed ? 10 : 4) / scale;
+    const labelY = top - (unit.chromosome.detailed ? 17 : 9) / scale;
     node.label.setAttribute("x", labelX);
     node.label.setAttribute("y", labelY);
     node.label.setAttribute(
       "font-size",
-      (this.width < 450 ? 7.5 : 8.5) / scale,
+      (unit.chromosome.detailed ? 16 : 13) / scale,
     );
     node.labelPosition = { x: labelX, y: labelY, anchorY: top };
   }
@@ -319,8 +370,8 @@ export class CellView {
             (p, i) => Math.hypot(p.x - points[i].x, p.y - points[i].y) * scale,
           ),
       );
-      const radius = Math.max(2.3, Math.min(6.2, gap * 0.44));
-      const inside = radius >= 3.8;
+      const radius = Math.max(5, Math.min(12, gap * 0.44));
+      const inside = radius >= 8;
       chromosome.balls.forEach((ball, i) => {
         const segment = ball.userData.segment;
         let marker = node.segments.get(segment.id);
@@ -367,13 +418,10 @@ export class CellView {
         );
         marker.number.setAttribute(
           "x",
-          inside ? 0 : ((i % 2 ? 1 : -1) * (radius + 5)) / scale,
+          inside ? 0 : ((i % 2 ? 1 : -1) * (radius + 7)) / scale,
         );
-        marker.number.setAttribute("y", 2.5 / scale);
-        marker.number.setAttribute(
-          "font-size",
-          (inside ? Math.min(7, radius * 1.35) : 7.5) / scale,
-        );
+        marker.number.setAttribute("y", 4 / scale);
+        marker.number.setAttribute("font-size", (inside ? 12 : 11) / scale);
         marker.number.setAttribute("fill", inside ? "white" : "#42636f");
         marker.number.setAttribute("paint-order", "stroke");
         marker.number.setAttribute("stroke", inside ? "none" : "#edf5f2");
@@ -401,7 +449,7 @@ export class CellView {
 
   layoutLabels(scale) {
     const rows = [];
-    const font = this.width < 450 ? 7.5 : 8.5;
+    const font = 13;
     const visible = [...this.nodes.values()].filter(
       (node) => node.group.style.display !== "none",
     );
@@ -420,8 +468,8 @@ export class CellView {
       row.nodes.sort((a, b) => a.labelPosition.x - b.labelPosition.x);
       let right = -Infinity;
       const placed = row.nodes.map((node) => {
-        const half = (node.label.textContent.length * font * 0.3) / scale;
-        const x = Math.max(node.labelPosition.x, right + half + 1.5 / scale);
+        const half = (node.label.textContent.length * font * 0.32) / scale;
+        const x = Math.max(node.labelPosition.x, right + half + 4 / scale);
         right = x + half;
         return { node, x };
       });
@@ -444,11 +492,50 @@ export class CellView {
     }
   }
 
+  drawInterior(shape, opacity, scale) {
+    const group = svg("g", { opacity });
+    // Peripheral granules add a quiet cytoplasmic texture; they do not encode data.
+    for (let i = 0; i < 42; i++) {
+      const angle = i * 2.399963;
+      const radial = 0.82 + (i % 4) * 0.035;
+      group.appendChild(
+        svg("circle", {
+          cx: shape.x + Math.cos(angle) * shape.rx * radial,
+          cy: shape.y + Math.sin(angle) * shape.ry * radial,
+          r: (i % 3 === 0 ? 1.7 : 1) / scale,
+          fill: "#658f85",
+          opacity: 0.25,
+        }),
+      );
+    }
+    const nuclear =
+      ["initial", "duplicated"].includes(this.model.state) &&
+      this.phase !== "formTetrads";
+    if (nuclear) {
+      group.appendChild(
+        svg("ellipse", {
+          cx: shape.x,
+          cy: shape.y,
+          rx: shape.rx * 0.9,
+          ry: shape.ry * 0.9,
+          fill: "url(#nucleoplasm)",
+          stroke: "#9bacc6",
+          "stroke-width": 1.6 / scale,
+          "stroke-dasharray": `${5 / scale} ${3 / scale}`,
+        }),
+      );
+    }
+    this.interior.appendChild(group);
+  }
+
   frame() {
     const elapsed = performance.now() - (this.startedAt || performance.now());
-    this.width = Math.max(this.container.clientWidth, 300);
-    this.height =
-      this.width < 450 ? 440 : Math.min(720, Math.max(500, this.width * 0.62));
+    this.width = Math.max(this.container.clientWidth - 24, 960);
+    const divided = this.model.state === "done" || this.phase === "divideAgain";
+    this.height = divided
+      ? Math.max(1100, this.width * 1.08)
+      : Math.max(790, this.width * 0.74);
+    this.svg.style.width = `${this.width * this.zoom}px`;
     this.svg.setAttribute("viewBox", `0 0 ${this.width} ${this.height}`);
     const groups = this.membraneGroups(elapsed);
     const shapes = groups.flatMap((group) =>
@@ -475,18 +562,21 @@ export class CellView {
       `translate(${this.width / 2},${this.height / 2}) scale(${scale}) translate(${-x},${-y})`,
     );
     this.membranes.replaceChildren();
+    this.interior.replaceChildren();
     const ellipse = (shape, opacity = 1) => {
+      this.drawInterior(shape, opacity, scale);
       this.membranes.appendChild(
         svg("ellipse", {
           cx: shape.x,
           cy: shape.y,
           rx: shape.rx,
           ry: shape.ry,
-          fill: "#edf5f2",
-          "fill-opacity": 0.78 * opacity,
-          stroke: "#86b2aa",
+          fill: "url(#cytoplasm)",
+          "fill-opacity": opacity,
+          filter: "url(#cell-shadow)",
+          stroke: "#4a8781",
           "stroke-opacity": opacity,
-          "stroke-width": 1.8 / scale,
+          "stroke-width": 3 / scale,
         }),
       );
       this.membranes.appendChild(
@@ -496,9 +586,9 @@ export class CellView {
           rx: shape.rx + 0.8 / scale,
           ry: shape.ry + 0.8 / scale,
           fill: "none",
-          stroke: "#d5e5df",
+          stroke: "#b6d8cc",
           "stroke-opacity": opacity,
-          "stroke-width": 4 / scale,
+          "stroke-width": 6 / scale,
         }),
       );
     };
@@ -511,10 +601,10 @@ export class CellView {
       this.membranes.appendChild(
         svg("path", {
           d: cleavagePath(a, b, group.progress, group.vertical),
-          fill: "#edf5f2",
+          fill: "url(#cytoplasm)",
           "fill-opacity": 0.8 * (1 - group.progress * 0.65),
-          stroke: "#86b2aa",
-          "stroke-width": 1.8 / scale,
+          stroke: "#4a8781",
+          "stroke-width": 3 / scale,
           opacity: 1 - group.progress,
         }),
       );

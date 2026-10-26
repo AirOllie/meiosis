@@ -1,7 +1,7 @@
-import { SchematicLab } from "./schematic_lab.js";
-import { HumanMeiosis } from "./human_meiosis.js";
+import { SchematicLab } from "./schematic_lab.js?v=cell-atlas-5";
+import { HumanMeiosis } from "./human_meiosis.js?v=cell-atlas-5";
 import { shortChromatid, shortSegment } from "./schematic_view.js";
-import { CellView } from "./cell_view.js?v=cohesion";
+import { CellView } from "./cell_view.js?v=cell-atlas-5";
 
 const $ = (id) => document.getElementById(id);
 const sex =
@@ -79,6 +79,15 @@ const action = {
   ],
 };
 const cellView = new CellView($("genomeBoard"), model, lab);
+function zoom(value) {
+  cellView.setZoom(value);
+  $("zoomLevel").textContent = `${Math.round(cellView.zoom * 100)}%`;
+}
+$("zoomInBtn").addEventListener("click", () => zoom(cellView.zoom + 0.2));
+$("zoomOutBtn").addEventListener("click", () => zoom(cellView.zoom - 0.2));
+$("fitBtn").addEventListener("click", () =>
+  zoom(Math.min(1, ($("genomeBoard").clientWidth - 24) / cellView.width)),
+);
 
 for (const mode of modes) {
   mode.setAttribute("aria-pressed", String(mode.dataset.sex === sex));

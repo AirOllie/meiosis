@@ -8,7 +8,7 @@ export function humanPairSpecs(sex = "XY") {
       detailed: number === 1,
       members: ["A", "B"].map((homolog) => ({
         id: `${number}${homolog}`,
-        pattern: number === 1 ? "oo-oooo" : "o-o",
+        pattern: number === 1 ? "oo-oooo" : "oo-oo",
       })),
     };
   });
@@ -38,14 +38,16 @@ export class HumanMeiosis {
       const detailed = spec.detailed;
       const slot = Number(spec.id) - 2;
       const x =
-        spec.id === "1" ? -23 : spec.id === "sex" ? 19 : ((slot % 7) - 3) * 10;
-      const y = detailed ? 27 : -9 - Math.floor(slot / 7) * 13;
+        spec.id === "1" ? -28 : spec.id === "sex" ? 28 : ((slot % 7) - 3) * 13;
+      const y = detailed
+        ? 36
+        : -20 - Math.floor(slot / 7) * 16 + ((slot % 7) - 3) ** 2 * 0.65;
       const members = spec.members.map((member, index) => {
         const colors = detailed ? [0xff5599, 0xffdf40] : [0x69869c, 0x91a3b2];
         const chromosome = lab.addChromosome(
           member.pattern,
           colors[index],
-          x + (index ? 2.5 : -3),
+          x + (index ? 1 : -1) * (detailed ? 7 : 4),
           y,
           {
             id: member.id,
@@ -56,8 +58,19 @@ export class HumanMeiosis {
         );
         // A common depth and aligned short-arm tips allow the unequal
         // X/Y pair to meet only in its schematic terminal PAR1 region.
+        const tipY = chromosome.balls[0].position.y;
         for (const ball of chromosome.balls) {
-          ball.position.z = detailed ? 3 : -10;
+          // Magnify the two resolved pairs in the same physical scene.
+          // Stable IDs and corresponding sister geometry are preserved.
+          if (detailed) ball.position.y = tipY + (ball.position.y - tipY) * 2.2;
+          else
+            ball.position.x +=
+              (ball.position.y - tipY) *
+              Math.sin((slot + index * 3) * 2.4) *
+              0.16;
+          ball.position.z = 0;
+          ball.userData.oldX = ball.position.x;
+          ball.userData.oldY = ball.position.y;
           ball.userData.oldZ = ball.position.z;
         }
         return chromosome;
@@ -109,7 +122,7 @@ export class HumanMeiosis {
           pair.members.map((member) =>
             this.lab.duplicateChromosome(
               member,
-              2.2,
+              pair.detailed ? 5.8 : 2.2,
               0,
               0,
               pair.detailed ? delay : 0,
@@ -135,7 +148,7 @@ export class HumanMeiosis {
           pair.sisters[0],
           pair.members[1],
           pair.sisters[1],
-          2.2,
+          pair.detailed ? 6 : 2.2,
           duration,
         ),
       ),
@@ -145,7 +158,7 @@ export class HumanMeiosis {
 
   async crossover(duration = 2000) {
     // The other 21 pairs participate in segregation; their molecular
-    // recombination is deliberately unresolved by the coarse two-ball model.
+    // recombination is deliberately unresolved by the coarse model.
     await Promise.all(
       this.pairs
         .filter((pair) => pair.detailed)
@@ -175,7 +188,7 @@ export class HumanMeiosis {
     }
     this.labels.forEach((label) => label.remove());
     this.labels = [];
-    await this.lab.anaphaseI(this.groups[0], this.groups[1], 125, duration);
+    await this.lab.anaphaseI(this.groups[0], this.groups[1], 160, duration);
     this.state = "anaphase1_done";
   }
 
@@ -204,7 +217,7 @@ export class HumanMeiosis {
       this.cells[1],
       this.sisterPairs[0],
       this.sisterPairs[1],
-      110,
+      160,
       duration,
     );
     this.state = "done";

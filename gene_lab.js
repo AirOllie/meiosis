@@ -137,6 +137,15 @@ export class GeneLab extends GeneEngine {
 
             if (!currentBall.userData.segment) {
                 const index = newBalls.length - 1;
+                // Copy the source geometry too: its spacing and orientation
+                // may differ from the default straight two-unit chain.
+                const sourcePosition = chromosome.balls[index].position;
+                currentBall.position.set(sourcePosition.x + offsetX, sourcePosition.y + offsetY, sourcePosition.z + offsetZ);
+                currentBall.userData.oldX = currentBall.position.x;
+                currentBall.userData.oldY = currentBall.position.y;
+                currentBall.userData.oldZ = currentBall.position.z;
+                const connection = this.connections.find(c => c.child === currentBall);
+                if (connection) connection.restLength = connection.parent.position.distanceTo(currentBall.position);
                 this.identifySegment(currentBall, identity, index, chromosome.balls[index].userData.segment.id);
             }
             await new Promise(resolve => setTimeout(resolve, delay));

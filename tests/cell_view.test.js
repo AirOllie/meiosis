@@ -257,12 +257,14 @@ for (const sex of ["XX", "XY"]) {
             [sister, 2],
           ]) {
             const [a, b] = [member.balls[boundary - 1], member.balls[boundary]];
-            assert.equal(
-              Number(link.getAttribute(`x${endpoint}`)),
+            const expectedX =
               (a.position.x +
-                b.position.x +
-                (a.position.z + b.position.z) * 1.7) /
-                2,
+                a.position.z * 1.7 +
+                (b.position.x + b.position.z * 1.7)) /
+              2;
+            assert.ok(
+              Math.abs(Number(link.getAttribute(`x${endpoint}`)) - expectedX) <
+                1e-9,
             );
             assert.equal(
               Number(link.getAttribute(`y${endpoint}`)),
@@ -298,3 +300,88 @@ for (const sex of ["XX", "XY"]) {
     assert.equal(links().length, 0);
   });
 }
+
+test("large cell view keeps readable labels, encloses chromosomes in the nucleus and removes the envelope at pairing", async () => {
+  const lab = new SchematicLab();
+  const model = new HumanMeiosis(lab, "XX");
+  const container = new SvgNode("container");
+  container.clientWidth = 390;
+  const view = new CellView(container, model, lab);
+  assert.equal(view.width, 960);
+  for (const node of view.nodes.values()) {
+    assert.ok(
+      Number(node.label.getAttribute("font-size")) * view.camera.scale >= 13,
+    );
+    for (const marker of node.segments.values()) {
+      assert.ok(
+        Number(marker.number.getAttribute("font-size")) * view.camera.scale >=
+          11,
+      );
+    }
+  }
+  const nucleus = view.interior.children[0].children.find(
+    (node) => node.tag === "ellipse",
+  );
+  assert.ok(nucleus);
+  const cx = Number(nucleus.getAttribute("cx")),
+    cy = Number(nucleus.getAttribute("cy"));
+  const rx = Number(nucleus.getAttribute("rx")),
+    ry = Number(nucleus.getAttribute("ry"));
+  for (const chromosome of model.chromatids) {
+    for (const ball of chromosome.balls) {
+      const x = ball.position.x + ball.position.z * 1.7,
+        y = -ball.position.y;
+      assert.ok(
+        ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 < 1,
+        `${chromosome.chromatidId} is inside the nucleus`,
+      );
+    }
+  }
+  const before = model.chromatids.flatMap((chromosome) =>
+    chromosome.balls.map((ball) => ball.position.toArray()),
+  );
+  view.setZoom((container.clientWidth - 24) / view.width);
+  view.frame();
+  assert.equal(view.svg.style.width, "366px");
+  view.setZoom(1.4);
+  view.frame();
+  assert.equal(view.svg.style.width, "1344px");
+  assert.deepEqual(
+    model.chromatids.flatMap((chromosome) =>
+      chromosome.balls.map((ball) => ball.position.toArray()),
+    ),
+    before,
+  );
+  await model.duplicate(0);
+  view.update("formTetrads");
+  view.frame();
+  assert.ok(
+    view.interior.children.every((group) =>
+      group.children.every((node) => node.tag !== "ellipse"),
+    ),
+  );
+});
+
+test("replication preserves magnified and angled source geometry without changing stable copy IDs", async () => {
+  const lab = new SchematicLab();
+  const model = new HumanMeiosis(lab, "XY");
+  await model.duplicate(0);
+  for (const pair of model.pairs) {
+    for (let i = 0; i < 2; i++) {
+      pair.members[i].balls.forEach((source, index) => {
+        const copy = pair.sisters[i].balls[index];
+        assert.ok(
+          Math.abs(
+            copy.position.x - source.position.x - (pair.detailed ? 5.8 : 2.2),
+          ) < 1e-9,
+        );
+        assert.equal(copy.position.y, source.position.y);
+        assert.equal(copy.position.z, source.position.z);
+        assert.equal(
+          copy.userData.segment.copiedFromId,
+          source.userData.segment.id,
+        );
+      });
+    }
+  }
+});
