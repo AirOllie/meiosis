@@ -41,7 +41,7 @@ export class HumanMeiosis {
         spec.id === "1" ? -28 : spec.id === "sex" ? 28 : ((slot % 7) - 3) * 13;
       const y = detailed
         ? 36
-        : -20 - Math.floor(slot / 7) * 16 + ((slot % 7) - 3) ** 2 * 0.65;
+        : -20 - Math.floor(slot / 7) * 22 + ((slot % 7) - 3) ** 2 * 0.65;
       const members = spec.members.map((member, index) => {
         const colors = detailed ? [0xff5599, 0xffdf40] : [0x69869c, 0x91a3b2];
         const chromosome = lab.addChromosome(

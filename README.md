@@ -23,7 +23,7 @@ Each pair independently chooses its orientation at anaphase I. Each final produc
 
 ## Numbering and Segment Origins
 
-Every chromosome has a short visible number: **1A / 1B** through **22A / 22B**. The sex pair is numbered **23A / 23B**, corresponding to X/X in XX mode or X/Y in XY mode. A prime, such as **1A′**, marks the sister copy; once separated in meiosis II it is a chromosome in its own right.
+Every chromosome has a short visible number: **1A / 1B** through **22A / 22B**. The sex pair is numbered **23A / 23B**, corresponding to X/X in XX mode or X/Y in XY mode. After replication, every chromatid has its own full short label: **1A** and **1A′**. Prime labels occupy an upper row with leaders to their own strands; row spacing keeps these labels clear of adjacent chromosomes. Both sister DNA molecules contain one old strand and one new strand, so the prime is a tracing convention. A prime marks the sister copy; once separated in meiosis II it is a chromosome in its own right.
 
 Only chromosome 1 and the sex pair display segment numbers **01, 02, …**. Corresponding copies share the same position suffix. Color identifies the birth homolog, including after exchange. A source identity such as **1A′·05** remains unique and follows the segment; it appears in tooltips and the optional exchange log rather than on every object in the main cell.
 
@@ -61,6 +61,6 @@ npm run check
 npm test
 ```
 
-The 37 tests cover both full XX/XY lifecycles, counts and chromosome conservation, independent assortment, unique tetrad groups, stable segment and short display IDs, PAR-restricted X/Y exchanges on both diagonals, every eligible cut in the original small-scene regression tests, crossover progress, actual intermediate-frame chromosome movement, a changing membrane neck, and all 92 chromosome labels across four final products.
+The 39 tests cover both full XX/XY lifecycles, counts and chromosome conservation, independent assortment, unique tetrad groups, stable segment and short display IDs, PAR-restricted X/Y exchanges on both diagonals, every eligible cut in the original small-scene regression tests, crossover progress, actual intermediate-frame chromosome movement, a changing membrane neck, and all 92 chromosome labels across four final products.
 
 Original project: [rhulha/meiosis](https://github.com/rhulha/meiosis).

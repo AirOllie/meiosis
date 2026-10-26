@@ -171,13 +171,27 @@ export class CellView {
     group.appendChild(cohesion);
     const label = svg(
       "text",
-      { "text-anchor": "middle", class: "live-chromosome-label" },
+      {
+        "text-anchor": "middle",
+        class: `live-chromosome-label${id.split("-")[1]?.startsWith("S") ? " sister-label" : ""}`,
+        "data-chromatid-label": id,
+      },
       shortChromatid(id),
     );
     const leader = svg("line", {
       stroke: "#9db7b8",
       "stroke-linecap": "round",
     });
+    const sisterLabel = {
+      label: svg("text", {
+        "text-anchor": "middle",
+        class: "live-chromosome-label sister-label",
+      }),
+      leader: svg("line", { stroke: "#7b91a1", "stroke-linecap": "round" }),
+    };
+    sisterLabel.label.style.display = "none";
+    sisterLabel.leader.style.display = "none";
+    this.labels.append(sisterLabel.leader, sisterLabel.label);
     this.strands.appendChild(group);
     this.labels.appendChild(leader);
     this.labels.appendChild(label);
@@ -187,7 +201,7 @@ export class CellView {
       leader,
       lines: [],
       segments: new Map(),
-      copies: [],
+      sisterLabel,
       cohesion,
       cohesionLinks: [],
     };
@@ -262,23 +276,32 @@ export class CellView {
     });
     this.drawSegments(node, unit, chromosomes, scale);
     this.drawCohesion(node, unit, chromosomes, scale);
-    // Anchor names at the centromere, which remains with its chromosome
-    // even when a terminal segment is exchanged.
-    const index =
-      (unit.chromosome.pattern.split("-")[0].match(/o/g) || []).length - 1;
-    const anchors = chromosomes.map((c) =>
-      point(c.balls[Math.min(index, c.balls.length - 1)]),
-    );
-    const top = Math.min(...unit.chromosome.balls.map((ball) => point(ball).y));
-    const labelX = anchors.reduce((sum, p) => sum + p.x, 0) / anchors.length;
-    const labelY = top - (unit.chromosome.detailed ? 17 : 9) / scale;
-    node.label.setAttribute("x", labelX);
-    node.label.setAttribute("y", labelY);
-    node.label.setAttribute(
-      "font-size",
-      (unit.chromosome.detailed ? 16 : 13) / scale,
-    );
-    node.labelPosition = { x: labelX, y: labelY, anchorY: top };
+    // Every real chromatid gets its own name. Anchor to its centromere,
+    // so exchanging a terminal segment cannot move the chromatid's label.
+    const place = (slot, chromosome, sister) => {
+      const index =
+        (chromosome.pattern.split("-")[0].match(/o/g) || []).length - 1;
+      const anchor = point(
+        chromosome.balls[Math.min(index, chromosome.balls.length - 1)],
+      );
+      const top = Math.min(...chromosome.balls.map((ball) => point(ball).y));
+      const font = chromosome.detailed ? 16 : 13;
+      const rise =
+        (chromosome.detailed ? 17 : 9) +
+        (sister ? (chromosome.detailed ? 23 : 20) : 0);
+      const y = top - rise / scale;
+      slot.label.textContent = shortChromatid(chromosome.chromatidId);
+      slot.label.setAttribute("data-chromatid-label", chromosome.chromatidId);
+      slot.label.style.display = "";
+      slot.label.setAttribute("x", anchor.x);
+      slot.label.setAttribute("y", y);
+      slot.label.setAttribute("font-size", font / scale);
+      slot.labelPosition = { x: anchor.x, y, anchorY: top, font, sister };
+    };
+    place(node, unit.chromosome, false);
+    node.sisterLabel.label.style.display = "none";
+    node.sisterLabel.leader.style.display = "none";
+    if (unit.sister) place(node.sisterLabel, unit.sister, true);
   }
 
   drawCohesion(node, unit, chromosomes, scale) {
@@ -348,9 +371,6 @@ export class CellView {
   drawSegments(node, unit, chromosomes, scale) {
     for (const marker of node.segments.values())
       marker.group.style.display = "none";
-    node.copies.forEach((label) => {
-      label.style.display = "none";
-    });
     if (!unit.chromosome.detailed) return;
     const active = new Set(
       (this.lab.crossoverHistory || [])
@@ -359,7 +379,7 @@ export class CellView {
           record.transfers.flatMap((transfer) => transfer.segmentIds),
         ),
     );
-    chromosomes.forEach((chromosome, ci) => {
+    chromosomes.forEach((chromosome) => {
       // A virtual replication preview has no new identity until its real copy exists.
       if (!chromosome.chromatidId) return;
       const points = chromosome.balls.map(point);
@@ -427,32 +447,18 @@ export class CellView {
         marker.number.setAttribute("stroke", inside ? "none" : "#edf5f2");
         marker.number.setAttribute("stroke-width", 2 / scale);
       });
-      if (chromosomes.length > 1) {
-        let label = node.copies[ci];
-        if (!label) {
-          label = svg("text", {
-            class: "live-chromosome-label",
-            "text-anchor": "middle",
-          });
-          node.copies[ci] = label;
-          node.group.appendChild(label);
-        }
-        const bottom = points.reduce((a, b) => (a.y > b.y ? a : b));
-        label.style.display = "";
-        label.textContent = ci ? "′" : "";
-        label.setAttribute("x", bottom.x);
-        label.setAttribute("y", bottom.y + (radius + 9) / scale);
-        label.setAttribute("font-size", 11 / scale);
-      }
     });
   }
 
   layoutLabels(scale) {
     const rows = [];
-    const font = 13;
-    const visible = [...this.nodes.values()].filter(
-      (node) => node.group.style.display !== "none",
-    );
+    const visible = [...this.nodes.values()]
+      .filter((node) => node.group.style.display !== "none")
+      .flatMap((node) =>
+        node.sisterLabel.label.style.display !== "none"
+          ? [node, node.sisterLabel]
+          : [node],
+      );
     visible.sort((a, b) => a.labelPosition.y - b.labelPosition.y);
     for (const node of visible) {
       let row = rows.find(
@@ -468,7 +474,9 @@ export class CellView {
       row.nodes.sort((a, b) => a.labelPosition.x - b.labelPosition.x);
       let right = -Infinity;
       const placed = row.nodes.map((node) => {
-        const half = (node.label.textContent.length * font * 0.32) / scale;
+        const half =
+          (node.label.textContent.length * node.labelPosition.font * 0.32) /
+          scale;
         const x = Math.max(node.labelPosition.x, right + half + 4 / scale);
         right = x + half;
         return { node, x };
@@ -481,7 +489,9 @@ export class CellView {
       for (const { node, x } of placed) {
         const adjusted = x - offset;
         node.label.setAttribute("x", adjusted);
-        const shifted = Math.abs(adjusted - node.labelPosition.x) * scale > 2;
+        const shifted =
+          node.labelPosition.sister ||
+          Math.abs(adjusted - node.labelPosition.x) * scale > 2;
         node.leader.style.display = shifted ? "" : "none";
         node.leader.setAttribute("x1", node.labelPosition.x);
         node.leader.setAttribute("y1", node.labelPosition.anchorY - 1 / scale);
@@ -615,6 +625,8 @@ export class CellView {
       node.group.style.display = "none";
       node.label.style.display = "none";
       node.leader.style.display = "none";
+      node.sisterLabel.label.style.display = "none";
+      node.sisterLabel.leader.style.display = "none";
     }
     this.units().forEach((unit) => this.drawUnit(unit, scale, elapsed));
     this.layoutLabels(scale);

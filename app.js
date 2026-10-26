@@ -1,7 +1,7 @@
-import { SchematicLab } from "./schematic_lab.js?v=cell-atlas-5";
-import { HumanMeiosis } from "./human_meiosis.js?v=cell-atlas-5";
+import { SchematicLab } from "./schematic_lab.js?v=sister-labels-2";
+import { HumanMeiosis } from "./human_meiosis.js?v=sister-labels-2";
 import { shortChromatid, shortSegment } from "./schematic_view.js";
-import { CellView } from "./cell_view.js?v=cell-atlas-5";
+import { CellView } from "./cell_view.js?v=sister-labels-2";
 
 const $ = (id) => document.getElementById(id);
 const sex =

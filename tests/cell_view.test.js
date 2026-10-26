@@ -385,3 +385,71 @@ test("replication preserves magnified and angled source geometry without changin
     }
   }
 });
+
+for (const sex of ["XX", "XY"]) {
+  test(`${sex}: each sister has a distinct visible label from replication through both divisions`, async (t) => {
+    const lab = new SchematicLab();
+    const model = new HumanMeiosis(lab, sex);
+    const view = new CellView(new SvgNode("container"), model, lab);
+    const visibleLabels = () =>
+      [...view.nodes.values()]
+        .filter((node) => node.group.style.display !== "none")
+        .flatMap((node) => [node, node.sisterLabel])
+        .filter((slot) => slot.label.style.display !== "none");
+    assert.equal(visibleLabels().length, 46);
+    await model.duplicate(0);
+    const verify = () => {
+      view.frame();
+      const labels = visibleLabels();
+      assert.equal(labels.length, 92);
+      assert.deepEqual(
+        new Set(
+          labels.map((slot) => slot.label.getAttribute("data-chromatid-label")),
+        ),
+        new Set(model.chromatids.map((c) => c.chromatidId)),
+      );
+      assert.equal(
+        new Set(labels.map((slot) => slot.label.textContent)).size,
+        92,
+      );
+      for (const slot of labels) {
+        const id = slot.label.getAttribute("data-chromatid-label");
+        assert.equal(slot.label.textContent, shortChromatid(id));
+        const chromosome = model.chromatids.find((c) => c.chromatidId === id);
+        const index = chromosome.pattern.split("-")[0].length - 1;
+        const ball = chromosome.balls[index];
+        assert.equal(
+          slot.labelPosition.x,
+          ball.position.x + ball.position.z * 1.7,
+        );
+        assert.ok(
+          Number(slot.label.getAttribute("font-size")) * view.camera.scale >=
+            13 - 1e-9,
+        );
+      }
+    };
+    verify();
+    for (const node of view.nodes.values()) {
+      assert.ok(node.sisterLabel.labelPosition.y < node.labelPosition.y);
+      assert.equal(node.sisterLabel.leader.style.display, "");
+    }
+    let now = 0;
+    t.mock.method(Date, "now", () => (now += 10000));
+    await model.formTetrads(1);
+    await model.crossover(1);
+    verify();
+    await model.separate(1);
+    await model.divide(1);
+    verify();
+    view.update("divideAgain");
+    verify();
+    await model.divideAgain(1);
+    view.update(null);
+    verify();
+    assert.ok(
+      [...view.nodes.values()].every(
+        (node) => node.sisterLabel.label.style.display === "none",
+      ),
+    );
+  });
+}

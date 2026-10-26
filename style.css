@@ -620,3 +620,8 @@ dialog p {
     transition: none !important;
   }
 }
+
+.sister-label {
+  fill: #526b89;
+  font-weight: 750;
+}
