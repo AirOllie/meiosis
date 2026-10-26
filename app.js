@@ -1,10 +1,6 @@
 import { SchematicLab } from "./schematic_lab.js";
 import { HumanMeiosis } from "./human_meiosis.js";
-import {
-  renderDetail,
-  shortChromatid,
-  shortSegment,
-} from "./schematic_view.js";
+import { shortChromatid, shortSegment } from "./schematic_view.js";
 import { CellView } from "./cell_view.js";
 
 const $ = (id) => document.getElementById(id);
@@ -12,12 +8,10 @@ const sex =
   new URLSearchParams(location.search).get("sex") === "XX" ? "XX" : "XY";
 const lab = new SchematicLab();
 const model = new HumanMeiosis(lab, sex);
-let selectedPair = "1";
 let phase = null;
 let autoPlay = false;
 const mainButton = $("duplicateBtn");
 const modes = [...document.querySelectorAll("[data-sex]")];
-const tabs = [...document.querySelectorAll("[data-pair]")];
 const names = [
   "Start",
   "S phase",
@@ -84,19 +78,7 @@ const action = {
     () => model.divideAgain(1600),
   ],
 };
-const cellView = new CellView($("genomeBoard"), model, lab, () => {
-  if (phase === "crossover")
-    renderDetail(
-      $("detailDiagram"),
-      model.pairs.find((pair) => pair.id === selectedPair),
-      lab,
-    );
-});
-
-function selectPair(pair) {
-  selectedPair = pair;
-  render();
-}
+const cellView = new CellView($("genomeBoard"), model, lab);
 
 for (const mode of modes) {
   mode.setAttribute("aria-pressed", String(mode.dataset.sex === sex));
@@ -107,10 +89,9 @@ for (const mode of modes) {
     location.assign(url);
   });
 }
-for (const tab of tabs)
-  tab.addEventListener("click", () => selectPair(tab.dataset.pair));
 $("resetBtn").addEventListener("click", () => location.reload());
 $("karyotypeBadge").textContent = "2n = 46";
+$("sexPairLegend").textContent = `23A: X · 23B: ${sex === "XY" ? "Y" : "X"}`;
 
 function paragraph(parent, text) {
   const element = document.createElement("p");
@@ -121,11 +102,6 @@ function paragraph(parent, text) {
 function renderHistory() {
   const records = lab.crossoverHistory || [];
   $("exchangeCount").textContent = records.length;
-  $("exchangeSummary").textContent = !records.length
-    ? "No crossover yet."
-    : records.some((record) => record.status === "exchanging")
-      ? "Crossover in progress…"
-      : "2 resolved crossovers.";
   const history = $("exchangeHistory");
   history.replaceChildren();
   for (const record of records) {
@@ -212,18 +188,7 @@ function render() {
     item.append(number, label);
     $("stageTimeline").appendChild(item);
   });
-  tabs.forEach((tab) =>
-    tab.setAttribute("aria-pressed", String(tab.dataset.pair === selectedPair)),
-  );
-  const pair = model.pairs.find((pair) => pair.id === selectedPair);
-  $("detailTitle").textContent =
-    selectedPair === "1" ? "Chromosome 1" : `Sex pair · ${sex}`;
-  $("detailSubtitle").textContent =
-    selectedPair === "1"
-      ? "1A / 1B"
-      : `23A = X · 23B = ${sex === "XY" ? "Y" : "X"}`;
   cellView.update(phase);
-  renderDetail($("detailDiagram"), pair, lab);
   $("currentStep").textContent = phase
     ? action[model.state]?.[1] || title
     : title;

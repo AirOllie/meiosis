@@ -1,4 +1,4 @@
-import { shortChromatid } from "./schematic_view.js";
+import { shortChromatid, shortSegment } from "./schematic_view.js";
 
 const NS = "http://www.w3.org/2000/svg";
 const svg = (tag, attrs = {}, text) => {
@@ -48,8 +48,8 @@ function cleavagePath(a, b, progress, vertical) {
 }
 
 export class CellView {
-  constructor(container, model, lab, onFrame) {
-    Object.assign(this, { container, model, lab, onFrame });
+  constructor(container, model, lab) {
+    Object.assign(this, { container, model, lab });
     this.phase = null;
     this.nodes = new Map();
     this.svg = svg("svg", {
@@ -130,7 +130,14 @@ export class CellView {
     this.strands.appendChild(group);
     this.labels.appendChild(leader);
     this.labels.appendChild(label);
-    const unit = { group, label, leader, lines: [] };
+    const unit = {
+      group,
+      label,
+      leader,
+      lines: [],
+      segments: new Map(),
+      copies: [],
+    };
     this.nodes.set(id, unit);
     return unit;
   }
@@ -198,6 +205,7 @@ export class CellView {
     node.lines.slice(n).forEach((line) => {
       line.style.display = "none";
     });
+    this.drawSegments(node, unit, chromosomes, scale);
     // Anchor names at the centromere, which remains with its chromosome
     // even when a terminal segment is exchanged.
     const index =
@@ -207,13 +215,119 @@ export class CellView {
     );
     const top = Math.min(...unit.chromosome.balls.map((ball) => point(ball).y));
     const labelX = anchors.reduce((sum, p) => sum + p.x, 0) / anchors.length;
+    const labelY = top - (unit.chromosome.detailed ? 10 : 4) / scale;
     node.label.setAttribute("x", labelX);
-    node.label.setAttribute("y", top - 4 / scale);
+    node.label.setAttribute("y", labelY);
     node.label.setAttribute(
       "font-size",
       (this.width < 450 ? 7.5 : 8.5) / scale,
     );
-    node.labelPosition = { x: labelX, y: top - 4 / scale, anchorY: top };
+    node.labelPosition = { x: labelX, y: labelY, anchorY: top };
+  }
+
+  drawSegments(node, unit, chromosomes, scale) {
+    for (const marker of node.segments.values())
+      marker.group.style.display = "none";
+    node.copies.forEach((label) => {
+      label.style.display = "none";
+    });
+    if (!unit.chromosome.detailed) return;
+    const active = new Set(
+      (this.lab.crossoverHistory || [])
+        .filter((record) => record.status === "exchanging")
+        .flatMap((record) =>
+          record.transfers.flatMap((transfer) => transfer.segmentIds),
+        ),
+    );
+    chromosomes.forEach((chromosome, ci) => {
+      // A virtual replication preview has no new identity until its real copy exists.
+      if (!chromosome.chromatidId) return;
+      const points = chromosome.balls.map(point);
+      const gap = Math.min(
+        ...points
+          .slice(1)
+          .map(
+            (p, i) => Math.hypot(p.x - points[i].x, p.y - points[i].y) * scale,
+          ),
+      );
+      const radius = Math.max(2.3, Math.min(6.2, gap * 0.44));
+      const inside = radius >= 3.8;
+      chromosome.balls.forEach((ball, i) => {
+        const segment = ball.userData.segment;
+        let marker = node.segments.get(segment.id);
+        if (!marker) {
+          const group = svg("g", {
+            class: "live-segment",
+            "data-segment-id": segment.id,
+          });
+          const title = svg("title");
+          const circle = svg("circle");
+          const number = svg("text", {
+            class: "live-segment-number",
+            "text-anchor": "middle",
+          });
+          group.append(title, circle, number);
+          node.group.appendChild(group);
+          marker = { group, title, circle, number };
+          node.segments.set(segment.id, marker);
+        }
+        marker.group.style.display = "";
+        marker.group.setAttribute(
+          "transform",
+          `translate(${points[i].x},${points[i].y})`,
+        );
+        marker.title.textContent = `${shortSegment(segment.id)}; in ${shortChromatid(chromosome.chromatidId)}${segment.copiedFromId ? `; copied from ${shortSegment(segment.copiedFromId)}` : ""}${segment.region ? `; ${segment.region}` : ""}`;
+        marker.circle.setAttribute("r", radius / scale);
+        marker.circle.setAttribute("fill", color(ball));
+        marker.circle.setAttribute(
+          "stroke",
+          active.has(segment.id)
+            ? "#d49a38"
+            : segment.region === "PAR1"
+              ? "#235f99"
+              : "#f6faf8",
+        );
+        marker.circle.setAttribute(
+          "stroke-width",
+          (active.has(segment.id) || segment.region === "PAR1" ? 1.8 : 0.8) /
+            scale,
+        );
+        marker.number.textContent = String(segment.originalIndex).padStart(
+          2,
+          "0",
+        );
+        marker.number.setAttribute(
+          "x",
+          inside ? 0 : ((i % 2 ? 1 : -1) * (radius + 5)) / scale,
+        );
+        marker.number.setAttribute("y", 2.5 / scale);
+        marker.number.setAttribute(
+          "font-size",
+          (inside ? Math.min(7, radius * 1.35) : 7.5) / scale,
+        );
+        marker.number.setAttribute("fill", inside ? "white" : "#42636f");
+        marker.number.setAttribute("paint-order", "stroke");
+        marker.number.setAttribute("stroke", inside ? "none" : "#edf5f2");
+        marker.number.setAttribute("stroke-width", 2 / scale);
+      });
+      if (chromosomes.length > 1) {
+        let label = node.copies[ci];
+        if (!label) {
+          label = svg("text", {
+            class: "live-chromosome-label",
+            "text-anchor": "middle",
+          });
+          node.copies[ci] = label;
+          node.group.appendChild(label);
+        }
+        const bottom = points.reduce((a, b) => (a.y > b.y ? a : b));
+        label.style.display = "";
+        label.textContent = ci ? "′" : "";
+        label.setAttribute("x", bottom.x);
+        label.setAttribute("y", bottom.y + (radius + 9) / scale);
+        label.setAttribute("font-size", 11 / scale);
+      }
+    });
   }
 
   layoutLabels(scale) {
@@ -264,7 +378,8 @@ export class CellView {
   frame() {
     const elapsed = performance.now() - (this.startedAt || performance.now());
     this.width = Math.max(this.container.clientWidth, 300);
-    this.height = this.width < 450 ? 440 : Math.max(470, this.width * 0.78);
+    this.height =
+      this.width < 450 ? 440 : Math.min(720, Math.max(500, this.width * 0.62));
     this.svg.setAttribute("viewBox", `0 0 ${this.width} ${this.height}`);
     const groups = this.membraneGroups(elapsed);
     const shapes = groups.flatMap((group) =>
@@ -344,7 +459,6 @@ export class CellView {
     }
     this.units().forEach((unit) => this.drawUnit(unit, scale, elapsed));
     this.layoutLabels(scale);
-    this.onFrame?.();
     if (this.phase || this.settle-- > 0)
       requestAnimationFrame(() => this.frame());
     else this.running = false;

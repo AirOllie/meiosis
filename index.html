@@ -50,39 +50,19 @@
           <div class="board-legend">
             <span><i class="legend-dot origin-a"></i>A / B: homologs</span
             ><span><i class="membrane-swatch"></i>Cell membrane</span>
+            <span><b>01</b> Segment</span><span><b>′</b> Sister copy</span>
+            <span id="sexPairLegend"></span>
           </div>
           <div id="genomeBoard"></div>
           <div class="board-footnote">
             <span id="boardNote">46 chromosomes</span
             ><span>Schematic · not to scale</span>
           </div>
-        </section>
-        <aside class="detail-panel panel" aria-label="Detailed DNA segments">
-          <div class="panel-heading">
-            <div><h2>DNA segments</h2></div>
-            <span class="tiny-badge">1 + sex pair</span>
-          </div>
-          <div class="detail-tabs" role="group" aria-label="Detailed pair">
-            <button data-pair="1" aria-pressed="true">Chromosome 1</button
-            ><button data-pair="sex" aria-pressed="false">Sex pair</button>
-          </div>
-          <div class="detail-caption">
-            <strong id="detailTitle"></strong><span id="detailSubtitle"></span>
-          </div>
-          <div id="detailDiagram"></div>
-          <div class="notation">
-            <span><b>01</b> segment</span><span><b>′</b> sister copy</span>
-          </div>
-          <div
-            id="exchangeSummary"
-            class="exchange-summary"
-            role="status"
-          ></div>
           <details id="exchangeDetails" class="exchange-details">
             <summary>Exchange log <span id="exchangeCount">0</span></summary>
             <div id="exchangeHistory"></div>
           </details>
-        </aside>
+        </section>
       </main>
       <footer class="action-bar">
         <div class="current-stage">

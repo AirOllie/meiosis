@@ -6,7 +6,7 @@ An animated scientific schematic with all **22 autosome pairs and an XX or XY se
 
 - **XX / XY** selects the starting karyotype and resets the run. XY is the default; `?sex=XX` selects XX.
 - **Play** runs the complete sequence. **Stop** stops after the current stage. The primary action button advances one stage at a time; the circular arrow resets the run.
-- **Chromosome 1 / Sex pair** selects the detailed segment diagram. Exchange records and model notes are collapsed by default.
+- Chromosome 1 and the sex pair show numbered DNA segments directly inside the same animated cell diagram. Exchange records and model notes are collapsed by default.
 - Hover over a detailed segment for its stable birth identity, current owner, and copy source.
 
 ## Counts
@@ -24,13 +24,13 @@ Each pair independently chooses its orientation at anaphase I. Each final produc
 
 Every chromosome has a short visible number: **1A / 1B** through **22A / 22B**. The sex pair is numbered **23A / 23B**, corresponding to X/X in XX mode or X/Y in XY mode. A prime, such as **1A′**, marks the sister copy; once separated in meiosis II it is a chromosome in its own right.
 
-Only the detailed view displays segment numbers **01, 02, …**. Corresponding copies share the same position suffix. Color identifies the birth homolog, including after exchange. A source identity such as **1A′·05** remains unique and follows the segment; it appears in tooltips and the optional exchange log rather than on every object in the main cell.
+Only chromosome 1 and the sex pair display segment numbers **01, 02, …**. Corresponding copies share the same position suffix. Color identifies the birth homolog, including after exchange. A source identity such as **1A′·05** remains unique and follows the segment; it appears in tooltips and the optional exchange log rather than on every object in the main cell.
 
 Internally, immutable IDs such as `1A-O-05` and `1A-S1-05` retain birth chromosome, chromatid, position, and copy-source metadata. Display shortening never renumbers an exchanged segment. The human sex-chromosome roots (`XA`/`XB` or `X`/`Y`) map to visible numbers 23A/23B.
 
 ## Animation
 
-The SVG cell view reads the model's chromosome/segment positions on successive animation frames. Replication creates sisters, pairing moves all 23 pairs, crossover moves the actual exchanged segments, and anaphase moves homologs to opposite poles. Cell outlines stretch and constrict during cytokinesis, ending with two and then four separate cell boundaries. The detailed view also animates the exchanged segments. Labels are packed to reduce collisions while preserving chromosome identity.
+The SVG cell view reads the model's chromosome/segment positions on successive animation frames. Replication creates sisters, pairing moves all 23 pairs, crossover moves the actual exchanged segments, and anaphase moves homologs to opposite poles. Cell outlines stretch and constrict during cytokinesis, ending with two and then four separate cell boundaries. Numbered DNA segments follow the actual exchanged balls in that same diagram; no separate detail view is used. Labels are packed to reduce collisions while preserving chromosome identity.
 
 The original GeneLab exchange and segregation methods remain the underlying model. A headless adapter avoids the old WebGL display and floating DOM labels. The renderer uses a 2D schematic projection; it is not a physical model of cell mechanics.
 
@@ -54,6 +54,6 @@ npm run check
 npm test
 ```
 
-The 32 tests cover both full XX/XY lifecycles, counts and chromosome conservation, independent assortment, unique tetrad groups, stable segment and short display IDs, PAR-restricted X/Y exchanges on both diagonals, every eligible cut in the original small-scene regression tests, crossover progress, actual intermediate-frame chromosome movement, a changing membrane neck, and all 92 chromosome labels across four final products.
+The 33 tests cover both full XX/XY lifecycles, counts and chromosome conservation, independent assortment, unique tetrad groups, stable segment and short display IDs, PAR-restricted X/Y exchanges on both diagonals, every eligible cut in the original small-scene regression tests, crossover progress, actual intermediate-frame chromosome movement, a changing membrane neck, and all 92 chromosome labels across four final products.
 
 Original project: [rhulha/meiosis](https://github.com/rhulha/meiosis).

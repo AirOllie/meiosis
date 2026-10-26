@@ -199,7 +199,7 @@ h1 {
 }
 .workspace {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 294px;
+  grid-template-columns: minmax(0, 1fr);
   gap: 20px;
   align-items: start;
 }
@@ -278,105 +278,6 @@ h2 {
   font-size: 9px;
   color: #a0afb5;
   gap: 8px;
-}
-.detail-panel .panel-heading {
-  padding: 22px 20px 16px;
-}
-.detail-tabs {
-  display: flex;
-  margin: 0 20px;
-  background: #f1f5f6;
-  border-radius: 8px;
-  padding: 3px;
-  gap: 3px;
-}
-.detail-tabs button {
-  flex: 1;
-  font-size: 11px;
-  padding: 7px 8px;
-  border: 0;
-  background: transparent;
-  border-radius: 6px;
-  color: #8b9ba2;
-}
-.detail-tabs button[aria-pressed="true"] {
-  background: white;
-  box-shadow: 0 1px 5px #203b4508;
-  color: var(--teal);
-  font-weight: 600;
-}
-.detail-caption {
-  text-align: center;
-  padding: 19px 10px 0;
-}
-.detail-caption strong {
-  display: block;
-  font-size: 12px;
-  font-weight: 500;
-}
-.detail-caption span {
-  display: block;
-  font-size: 9px;
-  color: #96a6ac;
-  margin-top: 5px;
-}
-#detailDiagram {
-  padding: 0 9px;
-}
-#detailDiagram svg {
-  width: 100%;
-  display: block;
-}
-.detail-chromosome-name {
-  font-size: 12px;
-  fill: #3f606e;
-  font-weight: 600;
-}
-.detail-sex-name {
-  font-size: 9px;
-  fill: #94a8b0;
-}
-.detail-segment-number {
-  font-family: Inter, system-ui, sans-serif;
-  font-size: 9px;
-  fill: white;
-  font-weight: 600;
-  pointer-events: none;
-}
-.detail-segment {
-  cursor: help;
-}
-.detail-segment:hover circle {
-  filter: brightness(1.1);
-}
-.detail-segment.exchanging circle {
-  stroke: #e6ac50;
-  stroke-width: 4;
-  animation: exchange-pulse 0.65s ease-in-out infinite alternate;
-}
-.notation {
-  margin: -4px 20px 15px;
-  padding: 11px 0;
-  border-top: 1px solid #f0f3f4;
-  display: flex;
-  justify-content: center;
-  gap: 24px;
-  font-size: 9px;
-  color: #95a5ac;
-}
-.notation b {
-  font-weight: 600;
-  color: #607e87;
-  margin-right: 4px;
-}
-.exchange-summary {
-  margin: 0 20px 15px;
-  border-radius: 8px;
-  background: #f3f8f7;
-  padding: 9px 12px;
-  color: #71998e;
-  font-size: 10px;
-  line-height: 1.6;
 }
 .exchange-details {
   border-top: 1px solid var(--line);
@@ -550,7 +451,7 @@ dialog p {
     padding: 42px 0 34px;
   }
   .workspace {
-    grid-template-columns: minmax(0, 1fr) 310px;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 @media (max-width: 900px) {
@@ -558,7 +459,7 @@ dialog p {
     padding: 0 20px 20px;
   }
   .workspace {
-    grid-template-columns: minmax(0, 1fr) 260px;
+    grid-template-columns: minmax(0, 1fr);
     gap: 14px;
   }
   .panel-heading {
@@ -587,9 +488,6 @@ dialog p {
   .board-footnote {
     margin: 0 17px;
     font-size: 8px;
-  }
-  .detail-panel .panel-heading {
-    padding: 18px 16px 14px;
   }
 }
 @media (max-width: 700px) {
@@ -666,17 +564,6 @@ dialog p {
   .board-legend {
     font-size: 8px;
   }
-  .detail-panel #detailDiagram {
-    max-width: 300px;
-    margin: auto;
-  }
-  .detail-caption {
-    padding-top: 15px;
-  }
-  .detail-tabs {
-    max-width: 320px;
-    margin: auto 20px;
-  }
   .action-bar {
     position: sticky;
     bottom: 10px;
@@ -708,9 +595,6 @@ dialog p {
   .page-note {
     font-size: 8px;
     line-height: 1.8;
-  }
-  .detail-panel .panel-heading {
-    padding: 18px;
   }
   .board-footnote {
     font-size: 8px;
@@ -805,4 +689,16 @@ dialog p {
     padding: 10px 11px;
     min-width: 48px;
   }
+}
+
+.live-segment {
+  cursor: help;
+}
+.live-segment:hover circle {
+  stroke: #e5ad55;
+}
+.live-segment-number {
+  font-family: Inter, system-ui, sans-serif;
+  font-weight: 600;
+  pointer-events: none;
 }

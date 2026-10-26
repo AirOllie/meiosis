@@ -143,3 +143,77 @@ test("cytokinesis changes the membrane neck continuously and ends with four numb
     92,
   );
 });
+
+test("one cell diagram shows only the two detailed pairs and retains exchanged segment identities", async (t) => {
+  const lab = new SchematicLab();
+  const model = new HumanMeiosis(lab, "XY");
+  const view = new CellView(new SvgNode("container"), model, lab);
+  const visibleSegments = () =>
+    [...view.nodes.values()].flatMap((node) =>
+      [...node.segments.values()].filter(
+        (marker) =>
+          node.group.style.display !== "none" &&
+          marker.group.style.display !== "none",
+      ),
+    );
+  assert.equal(visibleSegments().length, 25);
+  assert.equal(view.nodes.get("2A-O").segments.size, 0);
+  await model.duplicate(0);
+  view.frame();
+  const before = new Set(
+    visibleSegments().map((marker) =>
+      marker.group.getAttribute("data-segment-id"),
+    ),
+  );
+  assert.equal(before.size, 50);
+  let now = 0;
+  t.mock.method(Date, "now", () => (now += 10000));
+  await model.formTetrads(1);
+  await model.crossover(1);
+  view.frame();
+  const markers = visibleSegments();
+  assert.deepEqual(
+    new Set(
+      markers.map((marker) => marker.group.getAttribute("data-segment-id")),
+    ),
+    before,
+  );
+  for (const pair of model.pairs.filter((pair) => pair.detailed)) {
+    for (const chromosome of [...pair.members, ...pair.sisters]) {
+      for (const ball of chromosome.balls) {
+        const segment = ball.userData.segment;
+        const marker = markers.find(
+          (marker) =>
+            marker.group.getAttribute("data-segment-id") === segment.id,
+        );
+        assert.equal(
+          marker.number.textContent,
+          String(segment.originalIndex).padStart(2, "0"),
+        );
+        assert.ok(
+          marker.title.textContent.includes(
+            `in ${shortChromatid(chromosome.chromatidId)}`,
+          ),
+        );
+        assert.equal(
+          marker.group.getAttribute("transform"),
+          `translate(${ball.position.x + ball.position.z * 1.7},${-ball.position.y})`,
+        );
+        if (segment.region === "PAR1")
+          assert.equal(marker.circle.getAttribute("stroke"), "#235f99");
+      }
+    }
+  }
+  await model.separate(1);
+  await model.divide(1);
+  await model.divideAgain(1);
+  view.frame();
+  assert.deepEqual(
+    new Set(
+      visibleSegments().map((marker) =>
+        marker.group.getAttribute("data-segment-id"),
+      ),
+    ),
+    before,
+  );
+});
