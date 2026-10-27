@@ -1,4 +1,32 @@
-# Human Meiosis
+# Human cell division
+
+Two scientific demos share the same chromosome identities and animated cell renderer:
+
+- **Meiosis**: `index.html` — 23 homolog pairs, two divisions, four haploid products.
+- **Mitosis**: `mitosis.html` — a diploid somatic-cell model, one division, two diploid daughters.
+
+The header switches between demos and preserves the XX/XY selection. Both demos keep all chromosomes in one diagram, label individual sisters, and resolve DNA segments on chromosome 1 and the sex pair.
+
+## Mitosis
+
+Start at `mitosis.html?sex=XY` or select **Mitosis** in the header. **Play** runs the sequence; the main action button advances **Replicate → Align chromosomes → Separate sisters → Divide cell**. Zoom, Fit, Reset, and Replay work in both demos.
+
+| Stage                          | Cells | Chromosomes per cell | DNA molecules per cell |
+| ------------------------------ | ----: | -------------------: | ---------------------: |
+| Before S phase                 |     1 |                   46 |                     46 |
+| After S phase / metaphase      |     1 |                   46 |                     92 |
+| Anaphase, before cell division |     1 |     92 (46 per pole) |                     92 |
+| After cytokinesis              |     2 |                   46 |                     46 |
+
+Each replicated chromosome aligns individually. Homologs never form tetrads and no crossover is simulated. Each daughter retains one descendant of every starting chromosome, including both homologs and both sex chromosomes, so XX stays XX and XY stays XY. Prime labels follow tracing identities; both sisters contain an old DNA strand and a new one.
+
+During alignment, all sister-pair centromere midpoints occupy the model's x=0 metaphase plane; the depth coordinate spreads them in the 2D projection for legibility. Blue spindle fibers connect sisters to opposite poles. Arm cohesion is removed during prophase; centromeric cohesion is released at anaphase. Cytokinesis makes two cell boundaries and reforms two nuclear envelopes enclosing the full daughter genomes. Boundaries, fibers, sizes, lengths, condensation and positions remain schematic.
+
+The underlying genome initializer and faithful replication geometry are reused from the meiosis model. The mitotic model implements its own alignment and sister segregation, with no meiotic recombination or reduction division. See [NHGRI: Mitosis](https://www.genome.gov/genetics-glossary/Mitosis).
+
+The five mitosis tests cover complete XX/XY lifecycles, transient anaphase chromosome counts, opposite-pole sister segregation, retention of both homologs and karyotypes in each daughter, unchanged DNA chains and immutable IDs, absence of crossover/tetrads, intermediate-frame movement, cohesion release, spindle rendering and exactly two daughter nuclei containing their complete genomes.
+
+## Meiosis
 
 An animated scientific schematic with all **22 autosome pairs and an XX or XY sex pair**. The cell view shows chromosome movement and membrane division continuously. Only chromosome 1 and the sex pair resolve individual DNA segments; the other 21 pairs remain present and participate in both divisions.
 
@@ -61,6 +89,6 @@ npm run check
 npm test
 ```
 
-The 39 tests cover both full XX/XY lifecycles, counts and chromosome conservation, independent assortment, unique tetrad groups, stable segment and short display IDs, PAR-restricted X/Y exchanges on both diagonals, every eligible cut in the original small-scene regression tests, crossover progress, actual intermediate-frame chromosome movement, a changing membrane neck, and all 92 chromosome labels across four final products.
+The 44 tests cover both full XX/XY lifecycles, counts and chromosome conservation, independent assortment, unique tetrad groups, stable segment and short display IDs, PAR-restricted X/Y exchanges on both diagonals, every eligible cut in the original small-scene regression tests, crossover progress, actual intermediate-frame chromosome movement, a changing membrane neck, and all 92 chromosome labels across four final products.
 
 Original project: [rhulha/meiosis](https://github.com/rhulha/meiosis).

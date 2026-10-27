@@ -1,4 +1,4 @@
-import { GeneLab } from "./gene_lab.js?v=sister-labels-2";
+import { GeneLab } from "./gene_lab.js?v=mitosis-2";
 
 // Reuse the tested segment exchange and segregation model without a WebGL
 // scene, physics loop, sound, or hundreds of floating DOM labels.

@@ -1,84 +1,156 @@
-import { SchematicLab } from "./schematic_lab.js?v=sister-labels-2";
-import { HumanMeiosis } from "./human_meiosis.js?v=sister-labels-2";
+import { SchematicLab } from "./schematic_lab.js?v=mitosis-2";
+import { HumanMeiosis } from "./human_meiosis.js?v=mitosis-2";
 import { shortChromatid, shortSegment } from "./schematic_view.js";
-import { CellView } from "./cell_view.js?v=sister-labels-2";
+import { HumanMitosis } from "./human_mitosis.js?v=mitosis-2";
+import { MitosisView } from "./mitosis_view.js?v=mitosis-2";
+import { CellView } from "./cell_view.js?v=mitosis-2";
 
 const $ = (id) => document.getElementById(id);
 const sex =
   new URLSearchParams(location.search).get("sex") === "XX" ? "XX" : "XY";
 const lab = new SchematicLab();
-const model = new HumanMeiosis(lab, sex);
+const mitosis = document.body.dataset.division === "mitosis";
+const model = mitosis ? new HumanMitosis(lab, sex) : new HumanMeiosis(lab, sex);
 let phase = null;
 let autoPlay = false;
 const mainButton = $("duplicateBtn");
 const modes = [...document.querySelectorAll("[data-sex]")];
-const names = [
-  "Start",
-  "S phase",
-  "Prophase I",
-  "Crossover",
-  "Meiosis I",
-  "Meiosis II",
-];
-const stage = {
-  initial: [0, "Interphase", "46 chromosomes, unreplicated.", "Replicate"],
-  duplicated: [
-    1,
-    "S phase complete",
-    "46 chromosomes; 92 chromatids.",
-    "Pair homologs",
-  ],
-  tetrads_formed: [
-    2,
-    "Prophase I",
-    `22 autosomal tetrads + ${sex} pairing.`,
-    "Crossover",
-  ],
-  crossover_done: [
-    3,
-    "Recombination complete",
-    "Segment origins retained.",
-    "Separate homologs",
-  ],
-  anaphase1_done: [
-    4,
-    "Anaphase I",
-    "Homologs at opposite poles.",
-    "Divide cell",
-  ],
-  telophase1_done: [
-    4,
-    "Telophase I",
-    "23 duplicated chromosomes per cell.",
-    "Separate sisters",
-  ],
-  done: [5, "Meiosis complete", "23 chromosomes per product.", "Restart"],
-};
-const action = {
-  initial: ["duplicate", "Replicating…", () => model.duplicate(100)],
-  duplicated: [
-    "formTetrads",
-    "Pairing homologs…",
-    () => model.formTetrads(1200),
-  ],
-  tetrads_formed: [
-    "crossover",
-    "Exchanging segments…",
-    () => model.crossover(1800),
-  ],
-  crossover_done: [
-    "separate",
-    "Separating homologs…",
-    () => model.separate(1800),
-  ],
-  anaphase1_done: ["divide", "Cytokinesis I…", () => model.divide(1200)],
-  telophase1_done: [
-    "divideAgain",
-    "Meiosis II…",
-    () => model.divideAgain(1600),
-  ],
-};
-const cellView = new CellView($("genomeBoard"), model, lab);
+const names = mitosis
+  ? [
+      "Interphase",
+      "S phase",
+      "Prophase",
+      "Metaphase",
+      "Anaphase",
+      "Cytokinesis",
+    ]
+  : ["Start", "S phase", "Prophase I", "Crossover", "Meiosis I", "Meiosis II"];
+const stage = mitosis
+  ? {
+      initial: [0, "Interphase", "46 chromosomes, unreplicated.", "Replicate"],
+      replicating: [1, "S phase", "DNA replication.", "Replicate"],
+      duplicated: [
+        1,
+        "S phase complete",
+        "46 chromosomes; 92 DNA molecules.",
+        "Align chromosomes",
+      ],
+      aligning: [
+        2,
+        "Prophase / prometaphase",
+        "Nuclear envelope breakdown; spindle attachment.",
+        "Align chromosomes",
+      ],
+      metaphase: [
+        3,
+        "Metaphase",
+        "46 duplicated chromosomes aligned individually.",
+        "Separate sisters",
+      ],
+      anaphase: [
+        4,
+        "Anaphase",
+        "92 chromosomes in one cell; 46 toward each pole.",
+        "Divide cell",
+      ],
+      anaphase_done: [
+        4,
+        "Anaphase",
+        "46 chromosomes at each pole.",
+        "Divide cell",
+      ],
+      cytokinesis: [
+        5,
+        "Telophase / cytokinesis",
+        "Nuclear envelopes reform; the cell divides.",
+        "Divide cell",
+      ],
+      done: [
+        5,
+        "Mitosis complete",
+        "46 chromosomes in each daughter cell.",
+        "Restart",
+      ],
+    }
+  : {
+      initial: [0, "Interphase", "46 chromosomes, unreplicated.", "Replicate"],
+      duplicated: [
+        1,
+        "S phase complete",
+        "46 chromosomes; 92 chromatids.",
+        "Pair homologs",
+      ],
+      tetrads_formed: [
+        2,
+        "Prophase I",
+        `22 autosomal tetrads + ${sex} pairing.`,
+        "Crossover",
+      ],
+      crossover_done: [
+        3,
+        "Recombination complete",
+        "Segment origins retained.",
+        "Separate homologs",
+      ],
+      anaphase1_done: [
+        4,
+        "Anaphase I",
+        "Homologs at opposite poles.",
+        "Divide cell",
+      ],
+      telophase1_done: [
+        4,
+        "Telophase I",
+        "23 duplicated chromosomes per cell.",
+        "Separate sisters",
+      ],
+      done: [5, "Meiosis complete", "23 chromosomes per product.", "Restart"],
+    };
+const action = mitosis
+  ? {
+      initial: ["duplicate", "Replicating…", () => model.duplicate(100)],
+      duplicated: ["align", "Aligning chromosomes…", () => model.align(1800)],
+      metaphase: [
+        "separate",
+        "Separating sisters…",
+        () => model.separate(2200),
+      ],
+      anaphase_done: ["divide", "Cytokinesis…", () => model.divide(1600)],
+    }
+  : {
+      initial: ["duplicate", "Replicating…", () => model.duplicate(100)],
+      duplicated: [
+        "formTetrads",
+        "Pairing homologs…",
+        () => model.formTetrads(1200),
+      ],
+      tetrads_formed: [
+        "crossover",
+        "Exchanging segments…",
+        () => model.crossover(1800),
+      ],
+      crossover_done: [
+        "separate",
+        "Separating homologs…",
+        () => model.separate(1800),
+      ],
+      anaphase1_done: ["divide", "Cytokinesis I…", () => model.divide(1200)],
+      telophase1_done: [
+        "divideAgain",
+        "Meiosis II…",
+        () => model.divideAgain(1600),
+      ],
+    };
+const cellView = new (mitosis ? MitosisView : CellView)(
+  $("genomeBoard"),
+  model,
+  lab,
+);
+for (const link of document.querySelectorAll("[data-division-link]")) {
+  const url = new URL(link.getAttribute("href"), location.href);
+  url.searchParams.set("sex", sex);
+  link.href = url;
+}
 function zoom(value) {
   cellView.setZoom(value);
   $("zoomLevel").textContent = `${Math.round(cellView.zoom * 100)}%`;
@@ -109,6 +181,7 @@ function paragraph(parent, text) {
 }
 
 function renderHistory() {
+  if (mitosis) return;
   const records = lab.crossoverHistory || [];
   $("exchangeCount").textContent = records.length;
   const history = $("exchangeHistory");
@@ -157,11 +230,17 @@ function render() {
     ],
     [
       counts[0].chromatids,
-      counts.length === 1 ? "Chromatids" : "Chromatids / cell",
+      mitosis
+        ? counts.length === 1
+          ? "DNA molecules"
+          : "DNA molecules / cell"
+        : counts.length === 1
+          ? "Chromatids"
+          : "Chromatids / cell",
     ],
     [
       counts.length,
-      model.state === "done"
+      model.state === "done" && !mitosis
         ? "Products"
         : counts.length === 1
           ? "Cell"
@@ -225,14 +304,16 @@ function render() {
   $("resetBtn").disabled = Boolean(phase);
   document.body.classList.toggle("is-busy", Boolean(phase));
   $("boardNote").textContent =
-    model.state === "done" && sex === "XY"
+    !mitosis && model.state === "done" && sex === "XY"
       ? "2 X-bearing + 2 Y-bearing products"
-      : `${model.summary.length} ${model.summary.length === 1 ? "cell" : model.state === "done" ? "products" : "cells"}`;
-  $("karyotypeBadge").textContent = ["telophase1_done", "done"].includes(
-    model.state,
-  )
-    ? "n = 23"
-    : "2n = 46";
+      : `${model.summary.length} ${model.summary.length === 1 ? "cell" : model.state === "done" && !mitosis ? "products" : "cells"}`;
+  $("karyotypeBadge").textContent = mitosis
+    ? model.separated && model.state !== "done"
+      ? "46 per pole"
+      : "2n = 46"
+    : ["telophase1_done", "done"].includes(model.state)
+      ? "n = 23"
+      : "2n = 46";
   renderHistory();
 }
 

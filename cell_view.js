@@ -318,8 +318,10 @@ export class CellView {
       y: (points[boundary - 1].y + points[boundary].y) / 2,
     });
     const armCohesion =
-      this.phase !== "separate" &&
-      !["anaphase1_done", "telophase1_done"].includes(this.model.state);
+      this.model.kind === "mitosis"
+        ? this.model.armCohesion
+        : this.phase !== "separate" &&
+          !["anaphase1_done", "telophase1_done"].includes(this.model.state);
     const active = new Set(
       (this.lab.crossoverHistory || [])
         .filter((record) => record.status === "exchanging")
@@ -355,9 +357,14 @@ export class CellView {
         "data-sisters",
         `${original.chromatidId} ${sister.chromatidId || "replicating"}`,
       );
-      link.children[0].textContent = central
-        ? "Sister cohesion near the centromere; released in meiosis II"
-        : "Sister arm cohesion; released at anaphase I (schematic)";
+      link.children[0].textContent =
+        this.model.kind === "mitosis"
+          ? central
+            ? "Sister cohesion near the centromere; released at anaphase"
+            : "Sister arm cohesion; removed during prophase (schematic)"
+          : central
+            ? "Sister cohesion near the centromere; released in meiosis II"
+            : "Sister arm cohesion; released at anaphase I (schematic)";
       link.setAttribute("x1", a.x);
       link.setAttribute("y1", a.y);
       link.setAttribute("x2", b.x);
@@ -502,6 +509,17 @@ export class CellView {
     }
   }
 
+  nucleusScale() {
+    return 0.9;
+  }
+
+  showNucleus() {
+    return (
+      ["initial", "duplicated"].includes(this.model.state) &&
+      this.phase !== "formTetrads"
+    );
+  }
+
   drawInterior(shape, opacity, scale) {
     const group = svg("g", { opacity });
     // Peripheral granules add a quiet cytoplasmic texture; they do not encode data.
@@ -518,16 +536,13 @@ export class CellView {
         }),
       );
     }
-    const nuclear =
-      ["initial", "duplicated"].includes(this.model.state) &&
-      this.phase !== "formTetrads";
-    if (nuclear) {
+    if (this.showNucleus()) {
       group.appendChild(
         svg("ellipse", {
           cx: shape.x,
           cy: shape.y,
-          rx: shape.rx * 0.9,
-          ry: shape.ry * 0.9,
+          rx: shape.rx * this.nucleusScale(),
+          ry: shape.ry * this.nucleusScale(),
           fill: "url(#nucleoplasm)",
           stroke: "#9bacc6",
           "stroke-width": 1.6 / scale,
@@ -541,7 +556,9 @@ export class CellView {
   frame() {
     const elapsed = performance.now() - (this.startedAt || performance.now());
     this.width = Math.max(this.container.clientWidth - 24, 960);
-    const divided = this.model.state === "done" || this.phase === "divideAgain";
+    const divided =
+      this.model.kind !== "mitosis" &&
+      (this.model.state === "done" || this.phase === "divideAgain");
     this.height = divided
       ? Math.max(1100, this.width * 1.08)
       : Math.max(790, this.width * 0.74);

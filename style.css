@@ -625,3 +625,53 @@ dialog p {
   fill: #526b89;
   font-weight: 750;
 }
+
+.division-switch {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid #d2dfdb;
+  border-radius: 11px;
+}
+.division-switch a {
+  text-decoration: none;
+  color: #58747b;
+  font-size: 13px;
+  padding: 9px 16px;
+  border-radius: 7px;
+}
+.division-switch a[aria-current="page"] {
+  background: #247b88;
+  color: white;
+  font-weight: 650;
+}
+.division-switch a:focus-visible {
+  outline: 3px solid #3ca7b6;
+  outline-offset: 3px;
+}
+@media (max-width: 740px) {
+  .masthead {
+    height: auto;
+    min-height: 112px;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px 0;
+  }
+  .division-switch {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+  }
+  .division-switch a {
+    text-align: center;
+    flex: 1;
+    padding: 7px 14px;
+  }
+}
+
+.spindle-swatch {
+  display: inline-block;
+  width: 16px;
+  height: 2px;
+  background: #799eb3;
+}
