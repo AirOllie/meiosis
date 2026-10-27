@@ -2,13 +2,40 @@ import * as THREE from 'three';
 import { GeneEngine } from './gene_engine.js';
 
 export class GeneLab extends GeneEngine {
+    identifySegment(ball, identity, index, copiedFromId = null) {
+        this.labelSegment(ball, {
+            id: `${identity.chromatidId}-${String(index + 1).padStart(2, '0')}`,
+            originChromosomeId: identity.originChromosomeId,
+            originChromatidId: identity.chromatidId,
+            originalIndex: index + 1,
+            detailed: identity.detailed ?? true,
+            region: identity.crossoverPoints && index === 0 ? 'PAR1' : null,
+            copiedFromId
+        });
+    }
+
+    snapshotChromatid(chromosome) {
+        return {
+            chromatidId: chromosome.chromatidId,
+            segmentIds: chromosome.balls.map(ball => ball.userData.segment.id)
+        };
+    }
+
     setBallColor(ball, color) {
         ball.material.color.set(color);
         ball.material.emissive.set(color);
     }
 
-    addChromosome(pattern, color, x = 0, y = 0) {
+    addChromosome(pattern, color, x = 0, y = 0, options = {}) {
         const numBalls = (pattern.match(/o/g) || []).length;
+        this.chromosomeCount = (this.chromosomeCount || 0) + 1;
+        const originId = options.id || `C${this.chromosomeCount}`;
+        const identity = {
+            originChromosomeId: originId, chromatidId: `${originId}-O`,
+            detailed: options.detailed ?? true,
+            pairId: options.pairId || originId,
+            crossoverPoints: options.crossoverPoints || null
+        };
         const z = numBalls - 9;
         const balls = [];
         let currentBall = this.addBall(x, y, z, color);
@@ -30,10 +57,13 @@ export class GeneLab extends GeneEngine {
         }
 
         const chromosome = {
+            ...identity,
             balls: balls,
             pattern: pattern,
             color: color
         };
+
+        balls.forEach((ball, index) => this.identifySegment(ball, identity, index));
 
         return chromosome;
     }
@@ -42,6 +72,17 @@ export class GeneLab extends GeneEngine {
         const newBalls = [];
         const pattern = chromosome.pattern;
         const color = chromosome.color;
+        this.sisterCounts ??= new Map();
+        const originId = chromosome.originChromosomeId;
+        const sisterNumber = (this.sisterCounts.get(originId) || 0) + 1;
+        this.sisterCounts.set(originId, sisterNumber);
+        // Assign the sister identity before awaiting concurrent duplications.
+        // Matching positions share a suffix; the birth chromatid keeps IDs unique.
+        const identity = {
+            originChromosomeId: originId, chromatidId: `${originId}-S${sisterNumber}`,
+            detailed: chromosome.detailed, pairId: chromosome.pairId,
+            crossoverPoints: chromosome.crossoverPoints
+        };
 
         const firstBall = chromosome.balls[0];
         const newFirst = this.popBall(
@@ -51,11 +92,11 @@ export class GeneLab extends GeneEngine {
             color
         );
         newBalls.push(newFirst);
+        this.identifySegment(newFirst, identity, 0, firstBall.userData.segment.id);
 
         await new Promise(resolve => setTimeout(resolve, delay));
 
         let currentBall = newFirst;
-        let ballIndex = 1;
         let i = 1;
 
         while (i < pattern.length) {
@@ -63,7 +104,6 @@ export class GeneLab extends GeneEngine {
                 currentBall = await this.popStickBall(currentBall, 0);
                 newBalls.push(currentBall);
                 i += 2;
-                ballIndex++;
             } else if (pattern[i] === 'o') {
                 currentBall = await new Promise((resolve) => {
                     setTimeout(() => {
@@ -91,15 +131,28 @@ export class GeneLab extends GeneEngine {
                 });
                 newBalls.push(currentBall);
                 i++;
-                ballIndex++;
             } else {
                 i++;
             }
 
+            if (!currentBall.userData.segment) {
+                const index = newBalls.length - 1;
+                // Copy the source geometry too: its spacing and orientation
+                // may differ from the default straight two-unit chain.
+                const sourcePosition = chromosome.balls[index].position;
+                currentBall.position.set(sourcePosition.x + offsetX, sourcePosition.y + offsetY, sourcePosition.z + offsetZ);
+                currentBall.userData.oldX = currentBall.position.x;
+                currentBall.userData.oldY = currentBall.position.y;
+                currentBall.userData.oldZ = currentBall.position.z;
+                const connection = this.connections.find(c => c.child === currentBall);
+                if (connection) connection.restLength = connection.parent.position.distanceTo(currentBall.position);
+                this.identifySegment(currentBall, identity, index, chromosome.balls[index].userData.segment.id);
+            }
             await new Promise(resolve => setTimeout(resolve, delay));
         }
 
         return {
+            ...identity,
             balls: newBalls,
             pattern: pattern,
             color: color
@@ -121,8 +174,16 @@ export class GeneLab extends GeneEngine {
         );
 
         const validPoints = [];
-        for (let i = 1; i < centromereIndex; i++) validPoints.push(i);
-        for (let i = centromereIndex + 1; i < len - 1; i++) validPoints.push(i);
+        // Unequal X/Y chromatids may exchange only their homologous terminal
+        // region. Intersect both chromatids' explicitly permitted cuts.
+        for (let i = 1; i < len - 1; i++) {
+            if (i === centromereIndex) continue;
+            if (chromoA.crossoverPoints && !chromoA.crossoverPoints.includes(i)) continue;
+            if (chromoB.crossoverPoints && !chromoB.crossoverPoints.includes(i)) continue;
+            // Exchanging unequal distal tails would change chromosome lengths.
+            if (chromoA.balls.length !== chromoB.balls.length && i > centromereIndex) continue;
+            validPoints.push(i);
+        }
         if (validPoints.length === 0) return;
 
         const crossoverIndex = validPoints[Math.floor(Math.random() * validPoints.length)];
@@ -140,6 +201,26 @@ export class GeneLab extends GeneEngine {
             headA = chromoA.balls.slice(0, crossoverIndex);
             headB = chromoB.balls.slice(0, crossoverIndex);
         }
+
+        const record = {
+            status: 'exchanging',
+            progress: 0,
+            pair: [chromoA.originChromosomeId, chromoB.originChromosomeId],
+            chromatids: [chromoA.chromatidId, chromoB.chromatidId],
+            crossoverIndex,
+            arm: aboveCentromere ? 'start' : 'end',
+            region: chromoA.crossoverPoints || chromoB.crossoverPoints ? 'PAR1 (schematic)' : null,
+            before: [this.snapshotChromatid(chromoA), this.snapshotChromatid(chromoB)],
+            transfers: [
+                { from: chromoA.chromatidId, to: chromoB.chromatidId, segmentIds: tailA.map(b => b.userData.segment.id) },
+                { from: chromoB.chromatidId, to: chromoA.chromatidId, segmentIds: tailB.map(b => b.userData.segment.id) }
+            ],
+            after: null
+        };
+        this.crossoverHistory ??= [];
+        this.crossoverHistory.push(record);
+        this.highlightSegments([...tailA, ...tailB], true);
+        this.onCrossoverChange?.(record);
 
         const allBalls = [...sistersA, ...sistersB].flatMap(c => c.balls);
         allBalls.forEach(b => {
@@ -163,6 +244,8 @@ export class GeneLab extends GeneEngine {
                 const elapsed = Date.now() - startTime;
                 const progress = Math.min(elapsed / duration, 1);
                 const eased = this.easeInOutCubic(progress);
+
+                record.progress = eased;
 
                 tailA.forEach((ball, i) => {
                     ball.position.x = initA[i].x + (initB[i].x - initA[i].x) * eased;
@@ -214,7 +297,11 @@ export class GeneLab extends GeneEngine {
                     }
 
                     allBalls.forEach(b => b.userData.pinned = false);
-                    resolve();
+                    this.highlightSegments([...tailA, ...tailB], false);
+                    record.after = [this.snapshotChromatid(chromoA), this.snapshotChromatid(chromoB)];
+                    record.status = 'complete';
+                    this.onCrossoverChange?.(record);
+                    resolve(record);
                 }
             };
             animate();
@@ -285,7 +372,9 @@ export class GeneLab extends GeneEngine {
                 if (progress < 1) {
                     requestAnimationFrame(animate);
                 } else {
-                    const tetradId = Date.now();
+                    // Concurrent formations must never share a collision group.
+                    this.nextTetradId = (this.nextTetradId || 0) + 1;
+                    const tetradId = this.nextTetradId;
                     chromos.forEach(c => c.balls.forEach(ball => {
                         ball.userData.pinned = false;
                         ball.userData.tetradId = tetradId;

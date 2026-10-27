@@ -1,9 +1,17 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { DragControls } from 'three/addons/controls/DragControls.js';
+import { CSS2DObject, CSS2DRenderer } from 'three/addons/renderers/CSS2DRenderer.js';
 
 export class GeneEngine {
-    constructor(container) {
+    constructor(container, options = {}) {
+        if (options.headless) {
+            this.scene = new THREE.Scene();
+            this.draggableObjects = [];
+            this.connections = [];
+            this.animations = [];
+            return;
+        }
         this.container = container || document.body;
         this.scene = new THREE.Scene();
         this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -11,6 +19,13 @@ export class GeneEngine {
 
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.container.appendChild(this.renderer.domElement);
+
+        this.segmentLabelsVisible = true;
+        this.labelRenderer = new CSS2DRenderer();
+        this.labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        this.labelRenderer.domElement.className = 'segment-label-layer';
+        this.labelRenderer.domElement.setAttribute('aria-hidden', 'true');
+        this.container.appendChild(this.labelRenderer.domElement);
 
         this.camera.position.z = 60;
 
@@ -68,7 +83,8 @@ export class GeneEngine {
     }
 
     addBall(x = 0, y = 0, z = 0, color) {
-        const geometry = new THREE.SphereGeometry(1, 32, 32);
+        this.ballGeometry ??= new THREE.SphereGeometry(1, 16, 12);
+        const geometry = this.ballGeometry;
         const material = new THREE.MeshStandardMaterial({
             color: color,
             emissive: color,
@@ -85,6 +101,95 @@ export class GeneEngine {
         this.scene.add(sphere);
         this.draggableObjects.push(sphere);
         return sphere;
+    }
+
+    labelSegment(ball, segment) {
+        // Identity belongs to the mesh, never to its current array position.
+        ball.userData.segment = Object.freeze(segment);
+        if (segment.detailed === false) return;
+        const element = document.createElement('span');
+        element.className = 'segment-label';
+        element.textContent = segment.id;
+        element.dataset.chromatid = segment.originChromatidId;
+        element.classList.toggle('sister-segment', segment.copiedFromId !== null);
+        element.classList.toggle('par-segment', segment.region === 'PAR1');
+        const label = new CSS2DObject(element);
+        // Keep the longer origin-based IDs apart for adjacent sister copies.
+        label.center.x = segment.copiedFromId === null ? 1.05 : -0.05;
+        label.visible = this.segmentLabelsVisible &&
+            (!this.focusedChromatid || this.focusedChromatid.balls.includes(ball));
+        ball.add(label);
+        ball.userData.segmentLabel = label;
+    }
+
+    setSegmentLabelsVisible(visible) {
+        this.segmentLabelsVisible = visible;
+        for (const ball of this.draggableObjects) {
+            if (ball.userData.segmentLabel) {
+                ball.userData.segmentLabel.visible = visible &&
+                    (!this.focusedChromatid || this.focusedChromatid.balls.includes(ball));
+            }
+        }
+    }
+
+    setSegmentLabelFocus(chromosome) {
+        this.focusedChromatid = chromosome;
+        this.setSegmentLabelsVisible(this.segmentLabelsVisible);
+    }
+
+    highlightSegments(balls, exchanging) {
+        for (const ball of balls) {
+            ball.userData.segmentLabel?.element.classList.toggle('exchanging', exchanging);
+        }
+    }
+
+    addGroupLabel(chromosomes, text, className = 'pair-label') {
+        const element = document.createElement('span');
+        element.className = className;
+        element.textContent = text;
+        const label = new CSS2DObject(element);
+        this.scene.add(label);
+        const update = () => {
+            const balls = chromosomes.flatMap(c => c.balls);
+            const x = balls.reduce((sum, ball) => sum + ball.position.x, 0) / balls.length;
+            const y = Math.max(...balls.map(ball => ball.position.y)) + 3;
+            const z = balls.reduce((sum, ball) => sum + ball.position.z, 0) / balls.length;
+            label.position.set(x, y, z);
+            return true;
+        };
+        const animation = { update };
+        this.animations.push(animation);
+        update();
+        return { label, remove: () => {
+            this.scene.remove(label);
+            const index = this.animations.indexOf(animation);
+            if (index !== -1) this.animations.splice(index, 1);
+        } };
+    }
+
+    frameChromosomes(chromosomes, smooth = false) {
+        const bounds = new THREE.Box3();
+        for (const chromosome of chromosomes) {
+            for (const ball of chromosome.balls) bounds.expandByPoint(ball.position);
+        }
+        if (bounds.isEmpty()) return;
+        const center = bounds.getCenter(new THREE.Vector3());
+        const size = bounds.getSize(new THREE.Vector3()).addScalar(12);
+        const aspect = this.camera.aspect;
+        // Leave room for the desktop tracker, or the mobile title/controls.
+        const availableWidth = window.innerWidth > 700 ? 0.69 : 0.92;
+        const availableHeight = window.innerWidth > 700 ? 0.72 : 0.56;
+        const distance = Math.max(size.y / availableHeight, size.x / (aspect * availableWidth), size.z) /
+            (2 * Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2))) + size.z / 2;
+        const direction = this.camera.position.clone().sub(this.controls.target).normalize();
+        if (window.innerWidth > 700) {
+            const right = new THREE.Vector3().setFromMatrixColumn(this.camera.matrixWorld, 0);
+            center.addScaledVector(right, size.x * 0.18);
+        }
+        const position = center.clone().addScaledVector(direction, Math.max(distance, 24));
+        const weight = smooth ? 0.12 : 1;
+        this.camera.position.lerp(position, weight);
+        this.controls.target.lerp(center, weight);
     }
 
     addConnectedBall(parent) {
@@ -344,13 +449,16 @@ export class GeneEngine {
         }
 
         this.updatePhysics();
+        if (this.autoFrameChromosomes) this.frameChromosomes(this.autoFrameChromosomes, true);
         this.controls.update();
         this.renderer.render(this.scene, this.camera);
+        this.labelRenderer.render(this.scene, this.camera);
     }
 
     onWindowResize() {
         this.camera.aspect = window.innerWidth / window.innerHeight;
         this.camera.updateProjectionMatrix();
         this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.labelRenderer.setSize(window.innerWidth, window.innerHeight);
     }
 }

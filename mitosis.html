@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Human mitosis</title>
+    <link rel="stylesheet" href="./style.css?v=mitosis-2" />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.177.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.177.0/examples/jsm/"
+        }
+      }
+    </script>
+  </head>
+  <body data-division="mitosis">
+    <div class="app-shell">
+      <header class="masthead">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">✳</span
+          ><span>MITOSIS<small>HUMAN CHROMOSOME MODEL</small></span>
+        </div>
+        <nav class="division-switch" aria-label="Division type">
+          <a href="./index.html" data-division-link>Meiosis</a>
+          <a href="./mitosis.html" data-division-link aria-current="page"
+            >Mitosis</a
+          >
+        </nav>
+        <div class="header-controls">
+          <div class="sex-control" role="group" aria-label="Sex chromosomes">
+            <button data-sex="XX" aria-pressed="false">XX</button
+            ><button data-sex="XY" aria-pressed="true">XY</button>
+          </div>
+          <button class="quiet-button" id="infoBtn">Notes</button>
+        </div>
+      </header>
+      <section class="introduction">
+        <div><h1>Human mitosis</h1></div>
+        <div
+          id="populationSummary"
+          class="count-group"
+          aria-label="Current counts"
+          role="status"
+        ></div>
+      </section>
+      <nav id="stageTimeline" class="stage-timeline" aria-label="Stages"></nav>
+      <main class="workspace">
+        <section class="genome-panel panel">
+          <div class="panel-heading">
+            <div><h2>Cell division</h2></div>
+            <div class="board-tools">
+              <span id="karyotypeBadge" class="soft-badge"></span>
+              <div class="zoom-controls" role="group" aria-label="Diagram zoom">
+                <button id="zoomOutBtn" aria-label="Zoom out">−</button>
+                <output id="zoomLevel" aria-live="polite">100%</output>
+                <button id="zoomInBtn" aria-label="Zoom in">+</button>
+                <button id="fitBtn">Fit</button>
+              </div>
+            </div>
+          </div>
+          <div class="board-legend">
+            <span><i class="legend-dot origin-a"></i>A / B: homologs</span
+            ><span><i class="membrane-swatch"></i>Cell membrane</span>
+            <span><i class="cohesion-swatch"></i>Cohesin</span>
+            <span><i class="spindle-swatch"></i>Spindle</span>
+            <span><b>01</b> Segment</span><span><b>′</b> Sister copy</span>
+            <span id="sexPairLegend"></span>
+          </div>
+          <div id="genomeBoard"></div>
+          <div class="board-footnote">
+            <span id="boardNote">46 chromosomes</span
+            ><span>Schematic · not to scale</span>
+          </div>
+        </section>
+      </main>
+      <footer class="action-bar">
+        <div class="current-stage">
+          <span class="status-dot"></span>
+          <div>
+            <strong id="currentStep"></strong>
+            <p id="stepDescription"></p>
+          </div>
+        </div>
+        <div class="action-buttons">
+          <button
+            id="playBtn"
+            class="play-button"
+            title="Play the complete sequence"
+          >
+            Play
+          </button>
+          <button
+            id="resetBtn"
+            class="reset-button"
+            aria-label="Restart"
+            title="Restart"
+          >
+            ↺</button
+          ><button id="duplicateBtn" class="primary-button">
+            Replicate <span aria-hidden="true">→</span>
+          </button>
+        </div>
+      </footer>
+      <p class="page-note">
+        Detailed segments: chromosome 1 and the sex pair. The remaining 21 pairs
+        are simplified.
+      </p>
+    </div>
+    <dialog id="infoOverlay">
+      <div class="help-heading">
+        <h2>Model notes</h2>
+        <button id="infoClose" class="reset-button" aria-label="Close notes">
+          ×
+        </button>
+      </div>
+      <p>
+        <b>1A / 1B</b> label the two homologs; <b>1A′</b> labels the sister of
+        1A. The sex pair is numbered <b>23A / 23B</b>: X/X or X/Y.
+      </p>
+      <p>
+        One DNA replication is followed by one division. The 46 duplicated
+        chromosomes align individually; homologs do not form tetrads or exchange
+        segments in this model.
+      </p>
+      <p>
+        At anaphase, sisters separate and become chromosomes: the undivided cell
+        briefly contains 92 chromosomes, with 46 moving toward each pole. Each
+        final daughter has 46 chromosomes and the same starting karyotype.
+      </p>
+      <p>
+        Gold links show sister cohesion. Arm cohesion is removed during
+        prophase; cohesion near the centromere is released at anaphase. Thin
+        blue fibers depict spindle attachments. The shaded metaphase plate is a
+        projected geometric plane, not a membrane.
+      </p>
+      <p>
+        Both sister DNA molecules contain one old strand and one new strand.
+        Prime labels are tracing conventions. Detailed segments are shown on
+        chromosome 1 and the sex pair.
+      </p>
+      <p>
+        Chromosomes remain condensed for visibility. Cell/nuclear envelopes,
+        spindle fibers, lengths, sizes and positions are schematic. Changing XX
+        / XY starts a new run.
+      </p>
+      <div class="help-sources">
+        <a
+          href="https://www.genome.gov/genetics-glossary/Mitosis"
+          target="_blank"
+          rel="noreferrer"
+          >Mitosis · NHGRI ↗</a
+        >
+      </div>
+    </dialog>
+    <script type="module" src="./app.js?v=mitosis-2"></script>
+  </body>
+</html>
